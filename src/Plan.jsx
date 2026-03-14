@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Environment, Float, MeshDistortMaterial } from "@react-three/drei";
 import {
   FaArrowRight,
   FaBolt,
   FaBrain,
   FaCheckCircle,
+  FaCircle,
   FaClock,
   FaCoins,
   FaLightbulb,
@@ -11,7 +14,7 @@ import {
   FaUniversity,
 } from "react-icons/fa";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { generatePlannerResult } from "./services/plannerService";
+import { generatePlannerResult, refinePlannerResult } from "./services/plannerService";
 
 const alternativeIcons = {
   Cheapest: <FaCoins />,
@@ -25,9 +28,9 @@ function toneClass(tone) {
 }
 
 function scoreClass(score) {
-  if (score >= 90) return "tone-success";
-  if (score >= 80) return "tone-warning";
-  return "tone-danger";
+  if (score >= 90) return "status-good";
+  if (score >= 80) return "status-mid";
+  return "status-bad";
 }
 
 function SemanticBadge({ item }) {
@@ -246,10 +249,7 @@ export default function Plan() {
         const nextResult = await generatePlannerResult({ prompt: initialPrompt });
         if (!isActive) return;
         setResult(nextResult);
-        const preselected =
-          nextResult.recommendedUniversities.find((item) => item.selected)?.name ||
-          "UNSW Sydney";
-        setSelectedUniversity(preselected);
+        setSelectedUniversity(nextResult.defaultUniversity || "UNSW Sydney");
         setStatus("success");
       } catch (nextError) {
         if (!isActive) return;
@@ -268,6 +268,11 @@ export default function Plan() {
   const selectedUniversityData = useMemo(() => {
     if (!result) return null;
     return result.recommendedUniversities.find((item) => item.name === selectedUniversity) || null;
+  }, [result, selectedUniversity]);
+
+  const activeRecommendation = useMemo(() => {
+    if (!result) return null;
+    return result.universities?.[selectedUniversity] || result.recommended;
   }, [result, selectedUniversity]);
 
   const syncPromptToUrl = (nextPrompt) => {
@@ -294,9 +299,7 @@ export default function Plan() {
     try {
       const nextResult = await generatePlannerResult({ prompt: trimmedPrompt });
       setResult(nextResult);
-      setSelectedUniversity(
-        nextResult.recommendedUniversities.find((item) => item.selected)?.name || "UNSW Sydney"
-      );
+      setSelectedUniversity(nextResult.defaultUniversity || "UNSW Sydney");
       setStatus("success");
     } catch (nextError) {
       setError(nextError.message || "Unable to generate the pathway right now.");
@@ -318,9 +321,7 @@ export default function Plan() {
         followUpPrompt: refinement,
       });
       setResult(nextResult);
-      setSelectedUniversity(
-        nextResult.recommendedUniversities.find((item) => item.selected)?.name || selectedUniversity
-      );
+      setSelectedUniversity((current) => current || nextResult.defaultUniversity || "UNSW Sydney");
       setFollowUpPrompt("");
       setActivePanel("breakdown");
       setStatus("success");
@@ -408,33 +409,33 @@ export default function Plan() {
         </section>
       )}
 
-      {status === "success" && result && (
+      {status === "success" && result && activeRecommendation && (
         <section className="results-section fade-up">
           <div className="results-layout">
             <article className="recommended-card glass-panel">
               <div className="recommended-header">
                 <div>
                   <span className="plan-type">Primary answer</span>
-                  <h2>{result.recommended.title}</h2>
-                  <p className="key-point">{result.recommended.keyPoint}</p>
+                  <h2>{activeRecommendation.title}</h2>
+                  <p className="key-point">{activeRecommendation.keyPoint}</p>
                 </div>
 
-                <div className={`fit-score-panel ${scoreClass(result.recommended.fitScore)}`}>
+                <div className={`fit-score-panel ${scoreClass(activeRecommendation.fitScore)}`}>
                   <span>Fit score</span>
-                  <strong>{result.recommended.fitScore}/100</strong>
+                  <strong>{activeRecommendation.fitScore}/100</strong>
                 </div>
               </div>
 
-              <p className="recommended-summary">{result.recommended.summary}</p>
+              <p className="recommended-summary">{activeRecommendation.summary}</p>
 
               <div className="semantic-badge-row">
-                {result.recommended.badges.map((item) => (
+                {activeRecommendation.badges.map((item) => (
                   <SemanticBadge key={item.label} item={item} />
                 ))}
               </div>
 
               <div className="metrics-grid">
-                {result.recommended.metrics.map((item) => (
+                {activeRecommendation.metrics.map((item) => (
                   <MetricCard key={item.label} item={item} />
                 ))}
               </div>
@@ -442,11 +443,11 @@ export default function Plan() {
               <div className="recommended-two-col">
                 <div className="insight-box">
                   <h4>Uni life impact</h4>
-                  <p>{result.recommended.uniLife}</p>
+                  <p>{activeRecommendation.uniLife}</p>
                 </div>
                 <div className="insight-box">
                   <h4>Professional benefits</h4>
-                  <p>{result.recommended.professional}</p>
+                  <p>{activeRecommendation.professional}</p>
                 </div>
               </div>
 
@@ -487,7 +488,7 @@ export default function Plan() {
               <div className="rail-block">
                 <span className="section-kicker">Summary signals</span>
                 <div className="bullet-list compact">
-                  {result.recommended.why.map((point) => (
+                  {activeRecommendation.why.map((point) => (
                     <div key={point} className="bullet-item">
                       {point}
                     </div>
@@ -499,12 +500,43 @@ export default function Plan() {
                 <span className="section-kicker">Selected university</span>
                 {selectedUniversityData ? (
                   <div className="selected-university-card">
+                    <div className="university-select-shell">
+                      <div className="university-select-copy">
+                        <label className="composer-label" htmlFor="selected-university">
+                          Switch university
+                        </label>
+                        <p>Changing this updates the recommendation, signals, and roadmap instantly.</p>
+                      </div>
+                      <div className="university-select-wrap">
+                        <select
+                          id="selected-university"
+                          className="university-select"
+                          value={selectedUniversity}
+                          onChange={(event) => setSelectedUniversity(event.target.value)}
+                        >
+                          {result.recommendedUniversities.map((item) => (
+                            <option key={item.id} value={item.name}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                     <div className="selected-university-top">
                       <FaUniversity />
-                      <strong>{selectedUniversityData.name}</strong>
+                      <div>
+                        <strong>{selectedUniversityData.name}</strong>
+                        <span>{activeRecommendation.degree}</span>
+                      </div>
+                    </div>
+                    <div className="selected-university-meta">
+                      <span className="meta-pill">{activeRecommendation.duration}</span>
+                      <span className="meta-pill">{activeRecommendation.studyRhythm}</span>
+                      <span className="meta-pill">{activeRecommendation.difficultyBand}</span>
                     </div>
                     <p>{selectedUniversityData.rationale}</p>
-                    {selectedUniversityData.backendReady && (
+                    {activeRecommendation.backendReady && (
                       <div className="backend-note tone-success">
                         UNSW is the only current frontend selection prepared for later backend compatibility.
                       </div>
@@ -576,13 +608,13 @@ export default function Plan() {
 
             {activePanel === "breakdown" ? (
               <div className="detail-panel-body">
-                <p>{result.recommended.breakdown.overview}</p>
+                <p>{activeRecommendation.breakdown.overview}</p>
 
                 <div className="expanded-grid">
                   <div className="expanded-card">
                     <h5>Key strengths</h5>
                     <div className="bullet-list compact">
-                      {result.recommended.breakdown.strengths.map((item) => (
+                      {activeRecommendation.breakdown.strengths.map((item) => (
                         <div key={item} className="bullet-item">
                           {item}
                         </div>
@@ -593,7 +625,7 @@ export default function Plan() {
                   <div className="expanded-card">
                     <h5>Sample courses</h5>
                     <div className="sample-course-list">
-                      {result.recommended.breakdown.sampleCourses.map((course) => (
+                      {activeRecommendation.breakdown.sampleCourses.map((course) => (
                         <div key={course.code} className="sample-course">
                           <strong>{course.code}</strong>
                           <h6>{course.name}</h6>
@@ -606,7 +638,7 @@ export default function Plan() {
               </div>
             ) : (
               <div className="detail-panel-body">
-                <CoursePlanView plan={result.recommended.coursePlan} />
+                <CoursePlanView plan={activeRecommendation.coursePlan} />
               </div>
             )}
           </section>

@@ -355,7 +355,8 @@ select:focus {
 }
 
 .planner-search-box textarea,
-.followup-input {
+.followup-input,
+.university-select {
   width: 100%;
   background: color-mix(in srgb, var(--panel-strong) 72%, transparent);
   border: 1px solid var(--border-soft);
@@ -721,18 +722,86 @@ select:focus {
 }
 
 .selected-university-card {
-  padding: 18px;
-  border-radius: 20px;
+  padding: 20px;
+  border-radius: 24px;
   border: 1px solid var(--border-soft);
-  background: color-mix(in srgb, var(--panel-strong) 76%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 100%),
+    color-mix(in srgb, var(--panel-strong) 82%, transparent);
+}
+
+.university-select-shell {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--panel-soft) 86%, transparent);
+}
+
+.university-select-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.university-select-copy p {
+  font-size: 0.92rem;
+}
+
+.university-select-wrap {
+  position: relative;
+}
+
+.university-select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--accent-2);
+  border-bottom: 2px solid var(--accent-2);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.university-select {
+  margin: 0;
+  appearance: none;
+  padding: 16px 50px 16px 18px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-2) 10%, transparent), color-mix(in srgb, var(--accent) 10%, transparent)),
+    color-mix(in srgb, var(--panel-strong) 84%, transparent);
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .selected-university-top {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 10px;
   color: var(--text-h);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.selected-university-top div {
+  display: grid;
+  gap: 2px;
+}
+
+.selected-university-top span {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.selected-university-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .backend-note {
@@ -859,6 +928,11 @@ select:focus {
 .tone-warning {
   border-color: color-mix(in srgb, var(--tone-sun) 34%, var(--border-soft));
   background: linear-gradient(180deg, color-mix(in srgb, var(--tone-sun) 14%, transparent), transparent 100%);
+}
+
+.tone-accent {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-soft));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), transparent 100%);
 }
 
 .tone-neutral {

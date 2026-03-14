@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Home from "./Home";
 import Plan from "./Plan";
 import Navbar from "./components/Navbar";
+import TTS from "./components/TTS";
 import "./App.css";
 
 const THEME_KEY = "flamingobeavers-theme";
@@ -73,6 +74,8 @@ const App = () => {
           onThemeChange={setTheme}
           onPaletteChange={setPalette}
         />
+
+        <TTS />
 
         <Routes>
           <Route path="/" element={<Home />} />
