@@ -1,9 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import Home from "./Home"
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from './assets/vite.svg'
+import heroImg from './assets/hero.png'
+import './App.css'
 
-const App = () => {
+function App() {
+  const [count, setCount] = useState(0)
+
   return (
-<<<<<<< HEAD
     <>
       <section id="center">
         <div className="hero">
@@ -111,14 +115,10 @@ const App = () => {
       <div className="ticks"></div>
       <section id="spacer"></section>
     </>
-=======
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-      </Routes>
-    </Router>
->>>>>>> 75b387fd3be28f5d76edc5e6eed446d534f93686
   )
 }
 
 export default App
+
+
+
