@@ -2,106 +2,124 @@ const alternativeBlueprints = [
   {
     type: "Cheapest",
     badge: "Lower spend",
-    tone: "good",
+    tone: "warning",
     summary:
-      "Optimises around lower-cost progression and avoids unnecessary complexity early.",
+      "Optimises around cost-efficiency while still keeping the pathway academically coherent.",
     rationale: [
-      "Favors efficient sequencing and fewer costly detours.",
-      "Keeps flexibility for electives without overloading the first year.",
-      "Useful when budget certainty matters alongside degree progress.",
+      "Prefers cleaner sequencing with fewer detours.",
+      "Keeps the workload manageable while reducing unnecessary complexity.",
+      "Useful when budget certainty matters as much as fit.",
     ],
     tradeoffs:
-      "May leave less room for broad exploratory electives if cost minimisation stays the priority.",
+      "May leave less room for broad exploration if lower total cost stays the main priority.",
   },
   {
     type: "Efficient",
     badge: "Faster progression",
     tone: "info",
     summary:
-      "Streamlines the sequence so core requirements are unlocked as early as practical.",
+      "Streamlines the route so requirements unlock sooner and momentum stays high.",
     rationale: [
       "Reduces bottlenecks that can delay later-stage subjects.",
-      "Builds momentum toward specialisation earlier in the degree.",
-      "Helpful for students who want a cleaner, more direct path.",
+      "Builds a more direct path into advanced study.",
+      "Useful for students who want a cleaner route to completion.",
     ],
     tradeoffs:
-      "The pace can feel more intense because flexibility is traded for clearer sequencing.",
+      "The pace can feel more intense because flexibility is traded for progression speed.",
   },
   {
     type: "Internship-focused",
     badge: "Career signal",
-    tone: "vivid",
+    tone: "success",
     summary:
-      "Shapes the pathway around employability, project experience, and time for professional exposure.",
+      "Shapes the pathway around employability, projects, and room for professional exposure.",
     rationale: [
-      "Preserves space for internships, projects, and resume-building electives.",
-      "Prioritises subjects that create stronger evidence of applied capability.",
+      "Preserves space for internships and portfolio-building electives.",
+      "Prioritises subjects with stronger applied signals.",
       "Useful when students want earlier industry alignment.",
     ],
     tradeoffs:
-      "May prioritise practical outcomes over broader academic exploration in the short term.",
+      "May emphasise practical outcomes over broader academic exploration in the short term.",
   },
   {
     type: "Balanced Lifestyle",
     badge: "Sustainable load",
-    tone: "calm",
+    tone: "neutral",
     summary:
       "Balances ambition with a steadier study rhythm and more room for extracurricular life.",
     rationale: [
       "Avoids stacking the hardest subjects too aggressively.",
-      "Supports societies, part-time work, and personal recovery time.",
-      "Helps maintain consistency across multiple terms.",
+      "Supports part-time work, societies, and recovery time.",
+      "Useful for students who care about consistency across the year.",
     ],
     tradeoffs:
-      "Usually prioritises sustainability over absolute shortest completion time.",
-  },
-  {
-    type: "Research-led",
-    badge: "Deeper inquiry",
-    tone: "scholar",
-    summary:
-      "Leans into theory, analytical depth, and stronger preparation for honours or research pathways.",
-    rationale: [
-      "Builds stronger grounding for advanced inquiry and independent investigation.",
-      "Prioritises subjects with deeper conceptual challenge.",
-      "Useful for students considering postgraduate study or research-heavy careers.",
-    ],
-    tradeoffs:
-      "Can feel less immediately industry-focused compared with internship-led planning.",
-  },
-  {
-    type: "Exchange-friendly",
-    badge: "Global mobility",
-    tone: "sun",
-    summary:
-      "Keeps progression flexible so students can more easily fit exchange or international experiences into the degree.",
-    rationale: [
-      "Protects flexibility in sequencing and elective choice.",
-      "Avoids stacking too many rigid prerequisites early where possible.",
-      "Useful when students care about optional travel or broader global exposure.",
-    ],
-    tradeoffs:
-      "May require slightly more careful sequencing to preserve room later in the degree.",
+      "Usually prioritises sustainability over the shortest possible completion time.",
   },
 ];
 
-const pathwayLenses = [
-  { label: "Double degree route", tone: "vivid" },
-  { label: "Transfer-friendly start", tone: "sun" },
-  { label: "Scholarship-aware pacing", tone: "good" },
-  { label: "Exchange-safe sequencing", tone: "calm" },
+const allowedUniversities = [
+  {
+    name: "Adelaide University",
+    rationale: "Strong for students who want a research-aware environment with a calmer pace.",
+    tags: ["research-heavy", "balanced lifestyle"],
+  },
+  {
+    name: "The Australian National University",
+    rationale: "A strong mock fit for academically driven pathways with policy or research interest.",
+    tags: ["research-heavy", "high prestige"],
+  },
+  {
+    name: "The University of Melbourne",
+    rationale: "Useful for broad pathways that benefit from flexibility and strong academic reputation.",
+    tags: ["broad curriculum", "global reputation"],
+  },
+  {
+    name: "Monash University",
+    rationale: "A compelling option when students want scale, practical options, and international visibility.",
+    tags: ["industry-connected", "global reputation"],
+  },
+  {
+    name: "UNSW Sydney",
+    rationale: "Best mock fit for this planner because it aligns directly with the future UNSW backend pathway flow.",
+    tags: ["backend-ready", "industry-connected"],
+    backendReady: true,
+  },
+  {
+    name: "The University of Queensland",
+    rationale: "A good mock recommendation for balanced academic depth and a strong campus experience.",
+    tags: ["balanced lifestyle", "research-heavy"],
+  },
+  {
+    name: "The University of Sydney",
+    rationale: "Useful for students wanting a high-profile metropolitan option with broad pathway flexibility.",
+    tags: ["city-based", "high prestige"],
+  },
+  {
+    name: "The University of Western Australia",
+    rationale: "A strong mock option for students wanting a more spacious lifestyle and solid academic depth.",
+    tags: ["balanced lifestyle", "research-heavy"],
+  },
+  {
+    name: "University of Technology Sydney",
+    rationale: "Best suited to students who want practical, city-based, industry-connected pathway planning.",
+    tags: ["industry-connected", "internship-friendly"],
+  },
+  {
+    name: "Macquarie University",
+    rationale: "A good mock fit for students prioritising flexibility, accessibility, and employability.",
+    tags: ["flexible", "career-oriented"],
+  },
 ];
 
-function buildCoursePlan(topic, emphasis) {
+function buildCoursePlan(topic) {
   return [
     {
       year: "Year 1",
-      tone: "good",
+      completion: 38,
       terms: [
         {
           name: "Term 1",
           units: "12 UOC",
-          tone: "good",
           courses: [
             {
               code: "UNSW1001",
@@ -120,38 +138,18 @@ function buildCoursePlan(topic, emphasis) {
         {
           name: "Term 2",
           units: "12 UOC",
-          tone: "info",
           courses: [
             {
               code: "UNSW1105",
               name: `${topic} Core Methods`,
               description:
-                "Develops the main quantitative or analytical techniques relevant to this pathway.",
+                "Develops the main analytical techniques relevant to this pathway.",
             },
             {
               code: "UNSW1120",
-              name: `${emphasis} Elective`,
+              name: "Professional Elective",
               description:
-                "Adds early alignment with the planning angle highlighted in the recommendation.",
-            },
-          ],
-        },
-        {
-          name: "Term 3",
-          units: "12 UOC",
-          tone: "vivid",
-          courses: [
-            {
-              code: "UNSW1201",
-              name: "Applied Projects in Context",
-              description:
-                "Connects first-year learning to realistic UNSW-style projects and teamwork scenarios.",
-            },
-            {
-              code: "UNSW1230",
-              name: "Exploratory Discipline Elective",
-              description:
-                "Creates room to test an adjacent interest or strengthen a complementary skill area.",
+                "Adds an early employability or interest-based angle to the plan.",
             },
           ],
         },
@@ -159,43 +157,65 @@ function buildCoursePlan(topic, emphasis) {
     },
     {
       year: "Year 2",
-      tone: "sun",
+      completion: 71,
       terms: [
         {
           name: "Term 1",
           units: "12 UOC",
-          tone: "sun",
           courses: [
             {
               code: "UNSW2104",
               name: `${topic} Intermediate Practice`,
               description:
-                "Moves into discipline-specific practice while keeping progression manageable.",
+                "Moves into more discipline-specific work while keeping the progression stable.",
             },
             {
               code: "UNSW2140",
               name: "Professional Experience Preparation",
               description:
-                "Prepares students for internships, projects, or more advanced team-based study.",
+                "Prepares students for internships, projects, and later-stage planning choices.",
             },
           ],
         },
         {
           name: "Term 2",
           units: "12 UOC",
-          tone: "scholar",
           courses: [
             {
               code: "UNSW2202",
-              name: `${emphasis} Strategy Studio`,
+              name: "Strategy Studio",
               description:
-                "Uses the chosen pathway angle as the lens for deeper planning and decision-making.",
+                "Uses the chosen planning direction to guide more advanced decision-making.",
             },
             {
               code: "UNSW2218",
               name: "Interdisciplinary Elective",
               description:
-                "Broadens capability and keeps the overall pathway flexible for later refinement.",
+                "Keeps the route flexible while broadening the student profile.",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      year: "Year 3",
+      completion: 100,
+      terms: [
+        {
+          name: "Term 1",
+          units: "12 UOC",
+          courses: [
+            {
+              code: "UNSW3101",
+              name: "Capstone Direction",
+              description:
+                "Pulls together the degree through a more advanced or project-based experience.",
+            },
+            {
+              code: "UNSW3125",
+              name: "Pathway Specialisation Elective",
+              description:
+                "Lets the student lean more into internships, research, or flexibility.",
             },
           ],
         },
@@ -204,125 +224,22 @@ function buildCoursePlan(topic, emphasis) {
   ];
 }
 
-function getScoreTone(score) {
-  if (score >= 95) return "good";
-  if (score >= 90) return "info";
-  if (score >= 85) return "sun";
-  return "calm";
-}
+function buildUniversityRecommendations(prompt) {
+  const mentionsUNSW = /unsw/i.test(prompt);
 
-function buildPlannerResponse({ prompt, followUpPrompt, previousResultId }) {
-  const cleanPrompt = prompt.trim();
-  const refinement = followUpPrompt?.trim();
-  const topic = cleanPrompt
-    .replace(/^i want|help me|show me|find me/gi, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 42) || "UNSW pathway";
-  const emphasis = refinement ? "Refined Pathway" : "Recommended Pathway";
-  const now = Date.now();
-  const fitScore = refinement ? 96 : 94;
-
-  return {
-    id: previousResultId || `planner-${now}`,
-    prompt: cleanPrompt,
-    conversation: refinement
-      ? [
-          { role: "user", content: cleanPrompt },
-          { role: "user", content: refinement },
-        ]
-      : [{ role: "user", content: cleanPrompt }],
-    followUpSuggestions: [
-      "Make this more internship-focused",
-      "Reduce the workload in first year",
-      "Optimise this for lower total cost",
-      "Give me a stronger exchange-friendly version",
-      "Show a double degree-friendly version",
-      "Lean more toward research opportunities",
-    ],
-    recommended: {
-      title: refinement ? "Refined Recommended Pathway" : "Recommended Pathway",
-      subtitle: refinement
-        ? `Updated to reflect: "${refinement}"`
-        : "Best overall fit for progression, flexibility, and long-term opportunity.",
-      fitScore,
-      scoreTone: getScoreTone(fitScore),
-      duration: refinement ? "3.0 years est." : "3.2 years est.",
-      cost: refinement ? "$32,800 est." : "$33,900 est.",
-      difficulty: refinement ? "Moderate" : "Moderate to ambitious",
-      summary: refinement
-        ? `Using your original prompt plus the follow-up "${refinement}", this pathway shifts the balance while keeping UNSW progression realistic.`
-        : `Based on "${cleanPrompt}", this is the strongest overall mock recommendation for a polished UNSW planning experience.`,
-      keyPoint:
-        "Balances academic progression, employability, optionality, and a realistic student workload.",
-      uniLife:
-        "Designed to keep room for clubs, social life, and project work without turning every term into overload.",
-      professional:
-        "Keeps the pathway legible for future internships, graduate roles, and portfolio development.",
-      why: [
-        "Strong alignment with the student's prompt intent",
-        "Good balance between foundations and later flexibility",
-        "Clear enough to become a future backend-generated plan shape",
-      ],
-      stats: [
-        { label: "Progress confidence", value: "High", tone: "good" },
-        { label: "Flexibility", value: "Strong", tone: "info" },
-        { label: "Career momentum", value: "High", tone: "vivid" },
-        { label: "Lifestyle fit", value: "Balanced", tone: "calm" },
-      ],
-      breakdown: {
-        overview:
-          "The recommendation spaces foundational requirements first, then gradually introduces more career-relevant and exploratory study choices.",
-        strengths: [
-          "Early sequencing reduces common progression friction",
-          "Maintains flexibility for electives and specialisation",
-          "Supports both employability and sustainable workload",
-        ],
-        sampleCourses: [
-          {
-            code: "UNSW1001",
-            name: `${topic} Foundations`,
-            description:
-              "Builds the first layer of knowledge and university study capability.",
-          },
-          {
-            code: "UNSW2140",
-            name: "Professional Experience Preparation",
-            description:
-              "Helps students translate academic choices into employability and internship readiness.",
-          },
-          {
-            code: "UNSW2202",
-            name: `${emphasis} Strategy Studio`,
-            description:
-              "Demonstrates how planning emphasis can influence subject choice and sequencing.",
-          },
-        ],
-      },
-      coursePlan: buildCoursePlan(topic, emphasis),
-    },
-    pathways: pathwayLenses,
-    alternatives: alternativeBlueprints.map((item, index) => {
-      const score = 83 + index * 2;
-      return {
-        id: `${item.type.toLowerCase().replace(/\s+/g, "-")}-${index}`,
-        ...item,
-        fitScore: score,
-        scoreTone: getScoreTone(score),
-        compactPlan: [
-          `${item.type} Year 1 keeps core progression steady.`,
-          `Year 2 introduces a stronger ${item.type.toLowerCase()} emphasis.`,
-        ],
-      };
-    }),
-    meta: {
-      source: "mock-service",
-      backendReady: true,
-      retrievalLayer: "Elastic-ready",
-      latency: refinement ? "240ms" : "176ms",
-      generatedAt: new Date(now).toISOString(),
-    },
-  };
+  return allowedUniversities.map((university, index) => ({
+    id: university.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    ...university,
+    cta: university.backendReady ? "Use this university" : "Explore pathway",
+    tone: university.backendReady
+      ? "success"
+      : index < 3
+        ? "info"
+        : index < 7
+          ? "neutral"
+          : "warning",
+    selected: university.name === "UNSW Sydney" && mentionsUNSW,
+  }));
 }
 
 export async function generatePlannerResult({
@@ -335,8 +252,135 @@ export async function generatePlannerResult({
   }
 
   await new Promise((resolve) => {
-    window.setTimeout(resolve, followUpPrompt ? 750 : 900);
+    window.setTimeout(resolve, followUpPrompt ? 700 : 900);
   });
 
-  return buildPlannerResponse({ prompt, previousResultId, followUpPrompt });
+  const cleanPrompt = prompt.trim();
+  const refinement = followUpPrompt?.trim();
+  const topic = cleanPrompt
+    .replace(/^i want|help me|show me|find me/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 42) || "UNSW pathway";
+
+  return {
+    id: previousResultId || `planner-${Date.now()}`,
+    prompt: cleanPrompt,
+    recommended: {
+      title: refinement ? "Refined Recommended Pathway" : "Recommended Pathway",
+      subtitle: refinement
+        ? `Updated using your follow-up: "${refinement}"`
+        : "Best overall fit for progression, flexibility, and employability.",
+      fitScore: refinement ? 95 : 93,
+      summary: refinement
+        ? `This refined path responds to "${refinement}" while keeping the original goal realistic and progression-safe.`
+        : `Based on "${cleanPrompt}", this is the strongest overall mock recommendation for a premium AI planning flow.`,
+      keyPoint:
+        "Balances academic progression, career outcomes, and a realistic student workload.",
+      badges: [
+        {
+          label: "Pace",
+          value: "3.2 years est.",
+          helper: "Normal pace",
+          tone: "info",
+        },
+        {
+          label: "Cost",
+          value: "$33,900 est.",
+          helper: "Higher than average",
+          tone: "warning",
+        },
+        {
+          label: "Workload",
+          value: "Moderate to ambitious",
+          helper: "Medium intensity",
+          tone: "neutral",
+        },
+      ],
+      metrics: [
+        {
+          label: "Progress confidence",
+          value: "High",
+          tone: "success",
+        },
+        {
+          label: "Flexibility",
+          value: "Strong",
+          tone: "info",
+        },
+        {
+          label: "Career momentum",
+          value: "High",
+          tone: "success",
+        },
+        {
+          label: "Lifestyle fit",
+          value: "Balanced",
+          tone: "neutral",
+        },
+      ],
+      uniLife:
+        "Keeps room for clubs, social life, and project work without making every term feel overloaded.",
+      professional:
+        "Maintains a clear line into internships, graduate roles, and portfolio-building opportunities.",
+      why: [
+        "Strong alignment with the prompt intent",
+        "Clear progression with enough flexibility for electives",
+        "Good fit for both employability and sustainable study",
+      ],
+      breakdown: {
+        overview:
+          "This pathway front-loads foundations, unlocks later options early, and keeps enough flexibility for practical or lifestyle-driven adjustments.",
+        strengths: [
+          "Cleaner sequencing through early requirements",
+          "Enough room for electives and pathway tuning",
+          "Balanced between academic performance and employability",
+        ],
+        sampleCourses: [
+          {
+            code: "UNSW1001",
+            name: `${topic} Foundations`,
+            description:
+              "Builds the base knowledge and study capability needed for the rest of the pathway.",
+          },
+          {
+            code: "UNSW2140",
+            name: "Professional Experience Preparation",
+            description:
+              "Connects academic planning with internships and applied outcomes.",
+          },
+          {
+            code: "UNSW3101",
+            name: "Capstone Direction",
+            description:
+              "Provides a strong finishing point for the pathway story.",
+          },
+        ],
+      },
+      coursePlan: buildCoursePlan(topic),
+    },
+    followUpSuggestions: [
+      "Make this more internship-focused",
+      "Reduce the workload in first year",
+      "Optimise this for lower total cost",
+      "Make this more research-heavy",
+    ],
+    alternatives: alternativeBlueprints.map((item, index) => ({
+      id: `${item.type.toLowerCase().replace(/\s+/g, "-")}-${index}`,
+      ...item,
+      fitScore: 84 + index * 3,
+      compactPlan: [
+        `${item.type} Year 1 keeps progression stable and simple.`,
+        `Later terms tilt more strongly toward the ${item.type.toLowerCase()} objective.`,
+      ],
+    })),
+    recommendedUniversities: buildUniversityRecommendations(cleanPrompt),
+    meta: {
+      source: "mock-service",
+      backendReady: true,
+      retrievalLayer: "Elastic-ready",
+      latency: refinement ? "224ms" : "176ms",
+      selectedUniversitySupport: "UNSW Sydney only",
+    },
+  };
 }
