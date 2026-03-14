@@ -1,0 +1,2 @@
+# FlamingoBeaversFrontend
+Flamingo Beavers Frontend
