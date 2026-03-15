@@ -3,14 +3,12 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Float, MeshDistortMaterial } from "@react-three/drei";
 import {
   FaArrowRight,
-  FaBolt,
   FaBrain,
   FaCheckCircle,
   FaCircle,
   FaClock,
   FaCoins,
   FaLightbulb,
-  FaMapMarkedAlt,
   FaUniversity,
 } from "react-icons/fa";
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -21,10 +19,9 @@ import {
 } from "./services/plannerService";
 
 const alternativeIcons = {
+  Recommended: <FaCheckCircle />,
   Cheapest: <FaCoins />,
-  Efficient: <FaBolt />,
-  "Internship-focused": <FaMapMarkedAlt />,
-  "Balanced Lifestyle": <FaClock />,
+  Easiest: <FaClock />,
 };
 
 let hasPlayedPlanTitleAnimation = false;

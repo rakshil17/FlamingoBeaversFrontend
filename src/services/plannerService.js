@@ -2,6 +2,19 @@ const DEFAULT_UNIVERSITY = "UNSW Sydney";
 
 const alternativeBlueprints = [
   {
+    type: "Recommended",
+    badge: "Default fit",
+    tone: "success",
+    summary: "Uses career-goal relevance to build the most balanced recommendation.",
+    rationale: [
+      "Targets subjects that align with your stated direction.",
+      "Keeps prerequisite flow coherent for long-term progression.",
+      "Best first option when you want balanced outcomes.",
+    ],
+    tradeoffs:
+      "May not be the absolute cheapest or lightest pathway because fit is prioritised over a single objective.",
+  },
+  {
     type: "Cheapest",
     badge: "Lower spend",
     tone: "warning",
@@ -15,43 +28,17 @@ const alternativeBlueprints = [
       "May leave less room for broad exploration if lower total cost stays the main priority.",
   },
   {
-    type: "Efficient",
-    badge: "Faster progression",
+    type: "Easiest",
+    badge: "Manageable load",
     tone: "info",
-    summary: "Streamlines the route so requirements unlock sooner and momentum stays high.",
+    summary: "Prefers a smoother and more manageable pathway while preserving progression.",
     rationale: [
-      "Reduces bottlenecks that can delay later-stage subjects.",
-      "Builds a more direct path into advanced study.",
-      "Useful for students who want a cleaner route to completion.",
+      "Reduces prerequisite friction when possible.",
+      "Avoids unnecessary complexity in sequencing.",
+      "Useful when consistency and lower stress matter most.",
     ],
     tradeoffs:
-      "The pace can feel more intense because flexibility is traded for progression speed.",
-  },
-  {
-    type: "Internship-focused",
-    badge: "Career signal",
-    tone: "success",
-    summary: "Shapes the pathway around employability, projects, and room for industry exposure.",
-    rationale: [
-      "Preserves space for internships and portfolio-building electives.",
-      "Prioritises subjects with stronger applied signals.",
-      "Useful when students want earlier industry alignment.",
-    ],
-    tradeoffs:
-      "May emphasise practical outcomes over broader academic exploration in the short term.",
-  },
-  {
-    type: "Balanced Lifestyle",
-    badge: "Sustainable load",
-    tone: "neutral",
-    summary: "Balances ambition with a steadier study rhythm and more room for life outside class.",
-    rationale: [
-      "Avoids stacking the hardest subjects too aggressively.",
-      "Supports part-time work, societies, and recovery time.",
-      "Useful for students who care about consistency across the year.",
-    ],
-    tradeoffs:
-      "Usually prioritises sustainability over the shortest possible completion time.",
+      "Progress can be steadier than an aggressively accelerated plan.",
   },
 ];
 
@@ -1517,6 +1504,237 @@ const universityOrder = [
   "Macquarie University",
   "University of Technology Sydney",
 ];
+
+const BACKEND_BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_BASE_URL) || "";
+
+const BACKEND_BASE_CANDIDATES = [
+  BACKEND_BASE_URL,
+  "/api",
+  "http://localhost:5004",
+].filter((value, index, all) => value !== undefined && value !== null && all.indexOf(value) === index);
+
+const BACKEND_TERM_RANK = {
+  "term 1": 1,
+  "term 2": 2,
+  "term 3": 3,
+};
+
+function toTitleTerm(termValue) {
+  const normalized = String(termValue || "").trim().toLowerCase();
+  if (normalized === "term 1") return "Term 1";
+  if (normalized === "term 2") return "Term 2";
+  if (normalized === "term 3") return "Term 3";
+  return String(termValue || "Term");
+}
+
+function toCurrency(rawValue) {
+  const token = String(rawValue ?? "").replace(/[^\d.\-]/g, "");
+  if (!token) return null;
+  const value = Number(token);
+  return Number.isFinite(value) ? value : null;
+}
+
+function computeApproxFee(planData) {
+  const feeType = String(planData?.fee_type || "hecs").toLowerCase();
+  const fees = [];
+
+  for (const term of planData?.terms || []) {
+    for (const course of term?.courses || []) {
+      const fromFeeMap = course?.fees?.[feeType];
+      const parsed = toCurrency(fromFeeMap);
+      if (parsed !== null) {
+        fees.push(parsed);
+      }
+    }
+  }
+
+  if (!fees.length) return "Not available";
+  const total = fees.reduce((sum, value) => sum + value, 0);
+  return `~$${Math.round(total).toLocaleString()}`;
+}
+
+function mapBackendCoursePlan(terms) {
+  const groupedByYear = new Map();
+
+  for (const term of terms || []) {
+    const year = Number(term?.year);
+    if (!Number.isFinite(year)) continue;
+    if (!groupedByYear.has(year)) groupedByYear.set(year, []);
+    groupedByYear.get(year).push(term);
+  }
+
+  const years = [...groupedByYear.keys()].sort((a, b) => a - b);
+  const totalYears = Math.max(years.length, 1);
+
+  return years.map((year, index) => {
+    const yearTerms = [...groupedByYear.get(year)].sort((left, right) => {
+      const leftRank = BACKEND_TERM_RANK[String(left?.term || "").toLowerCase()] || 99;
+      const rightRank = BACKEND_TERM_RANK[String(right?.term || "").toLowerCase()] || 99;
+      return leftRank - rightRank;
+    });
+
+    return {
+      year: `Year ${index + 1}`,
+      completion: Math.round(((index + 1) / totalYears) * 100),
+      terms: yearTerms.map((term) => ({
+        name: toTitleTerm(term?.term),
+        units: `${Number(term?.uoc || 0)} UOC`,
+        courses: (term?.courses || []).map((course) => ({
+          code: course?.course_code || "TBD0000",
+          name: course?.title || course?.course_code || "Untitled course",
+          description:
+            course?.description ||
+            "No description is available for this course in the current backend payload.",
+        })),
+      })),
+    };
+  });
+}
+
+function createBackendRecommendation({ planData, prompt, modeLabel }) {
+  const mode = String(planData?.mode || "recommended").toLowerCase();
+  const mappedModeLabel = modeLabel || capitalizePhrase(mode);
+  const coursePlan = mapBackendCoursePlan(planData?.terms || []);
+  const flattenedCourses = coursePlan.flatMap((year) => year.terms.flatMap((term) => term.courses));
+  const approxFee = computeApproxFee(planData);
+  const unmetCount = Object.keys(planData?.unmet_requirements || {}).length;
+
+  const modeCopy =
+    mode === "cheapest"
+      ? {
+          fitScore: 93,
+          keyPoint: "Prioritises lower-fee sequencing while preserving the degree structure.",
+          summary: "This pathway is generated from the backend cheapest-mode planner.",
+          uniLife: "Budget pressure is reduced by prioritising lower-cost subjects when possible.",
+          professional:
+            "Keeps progression intact while using a cost-aware selection strategy for electives.",
+          why: [
+            "Backend plan mode: cheapest",
+            "Course ordering favours lower fee subjects",
+            "Useful when cost control is the primary objective",
+          ],
+        }
+      : mode === "easiest"
+        ? {
+            fitScore: 91,
+            keyPoint: "Prioritises a smoother and easier progression pathway.",
+            summary: "This pathway is generated from the backend easiest-mode planner.",
+            uniLife: "The sequence is tuned toward a steadier rhythm with less friction across terms.",
+            professional:
+              "Builds long-term progression while keeping term-to-term complexity manageable.",
+            why: [
+              "Backend plan mode: easiest",
+              "Designed for lower-friction sequencing",
+              "Useful when workload sustainability is a core priority",
+            ],
+          }
+        : {
+            fitScore: 95,
+            keyPoint: "Aligns course selection with the provided career goal.",
+            summary: "This pathway is generated from the backend recommended-mode planner.",
+            uniLife: "Balances progression, direction fit, and practical term-by-term pacing.",
+            professional:
+              "Uses career-interest guidance to rank and prioritise relevant electives.",
+            why: [
+              "Backend plan mode: recommended",
+              "Career-goal-driven elective ranking",
+              "Best balanced option when fit matters most",
+            ],
+          };
+
+  return {
+    id: "unsw-sydney",
+    university: DEFAULT_UNIVERSITY,
+    degree: "3707-SENGAH",
+    title: `${mappedModeLabel} plan at ${DEFAULT_UNIVERSITY}`,
+    subtitle: `Generated for "${prompt}"`,
+    duration: "4 years",
+    studyRhythm: "Trimester-based",
+    difficultyBand: mode === "easiest" ? "Manageable" : "Moderate to ambitious",
+    fitScore: modeCopy.fitScore,
+    keyPoint: modeCopy.keyPoint,
+    summary: modeCopy.summary,
+    badges: [
+      {
+        label: "Pace",
+        value: mode === "easiest" ? "Steady progression" : "Standard progression",
+        helper: `Mode: ${mappedModeLabel}`,
+        tone: "info",
+      },
+      {
+        label: "Cost",
+        value: approxFee,
+        helper: `Fee lens: ${String(planData?.fee_type || "hecs").toUpperCase()}`,
+        tone: mode === "cheapest" ? "success" : "neutral",
+      },
+      {
+        label: "Workload",
+        value: mode === "easiest" ? "Lower friction" : "Balanced",
+        helper: `${flattenedCourses.length} courses in current plan`,
+        tone: mode === "easiest" ? "success" : "info",
+      },
+    ],
+    metrics: [
+      { label: "Progress confidence", value: unmetCount ? "Watch constraints" : "Strong", tone: unmetCount ? "warning" : "success" },
+      { label: "Flexibility", value: "Guided", tone: "info" },
+      { label: "Career momentum", value: mode === "recommended" ? "High" : "Good", tone: "success" },
+      { label: "Lifestyle fit", value: mode === "easiest" ? "Better" : "Balanced", tone: "neutral" },
+    ],
+    uniLife: modeCopy.uniLife,
+    professional: modeCopy.professional,
+    why: modeCopy.why,
+    breakdown: {
+      overview: `${modeCopy.summary} Generated directly from the backend planner pipeline for ${DEFAULT_UNIVERSITY}.`,
+      strengths: [
+        `Uses backend mode: ${mode}`,
+        `Includes ${coursePlan.length} year blocks with trimester sequencing`,
+        unmetCount ? `Found ${unmetCount} unmet requirement categories to monitor` : "No unmet requirements reported in this plan",
+      ],
+      sampleCourses: flattenedCourses.slice(0, 4),
+    },
+    coursePlan,
+    backendReady: true,
+  };
+}
+
+async function callBackendPlanner({ mode, prompt, residencyStatus = "domestic" }) {
+  const normalizedMode = String(mode || "recommended").toLowerCase();
+  const requestedFeeType = residencyStatus === "international" ? "international" : "domestic";
+  const endpoint =
+    normalizedMode === "recommended"
+      ? "/planning/recommended"
+      : normalizedMode === "cheapest"
+        ? "/planning/cheapest"
+        : "/planning/easiest";
+
+  let lastError = null;
+
+  for (const baseUrl of BACKEND_BASE_CANDIDATES) {
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fee_type: requestedFeeType,
+          ...(normalizedMode === "recommended" ? { career_goal: prompt } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload?.error || `Backend ${normalizedMode} plan request failed.`);
+      }
+
+      return response.json();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(lastError?.message || `Backend ${normalizedMode} plan request failed.`);
+}
+
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
 function capitalizePhrase(value) {
@@ -1771,30 +1989,21 @@ function applyAlternativeScenario(recommendation, alternative, residencyStatus) 
       };
     }
 
-    if (alternative.type === "Efficient" && badge.label === "Pace") {
+    if (alternative.type === "Easiest" && badge.label === "Pace") {
       return {
         ...badge,
-        value: "Faster progression",
-        helper: "More compressed sequencing",
+        value: "Steady progression",
+        helper: "Lower-friction sequencing",
         tone: "info",
       };
     }
 
-    if (alternative.type === "Internship-focused" && badge.label === "Workload") {
+    if (alternative.type === "Recommended" && badge.label === "Workload") {
       return {
         ...badge,
-        value: "Moderate to ambitious",
-        helper: "Industry-facing emphasis",
+        value: "Balanced",
+        helper: "Career-fit prioritised",
         tone: "accent",
-      };
-    }
-
-    if (alternative.type === "Balanced Lifestyle" && badge.label === "Workload") {
-      return {
-        ...badge,
-        value: "Moderate",
-        helper: "Smoother week-to-week load",
-        tone: "neutral",
       };
     }
 
@@ -1806,14 +2015,14 @@ function applyAlternativeScenario(recommendation, alternative, residencyStatus) 
     keyPoint: `${recommendation.keyPoint} Scenario update: ${alternative.type.toLowerCase()} lens applied.`,
     summary: `${alternative.summary} The ${recommendation.university} plan is now reframed through a ${alternative.type.toLowerCase()} lens${alternative.type === "Cheapest" ? ` for a ${residencyLabel} student` : ""}.`,
     uniLife:
-      alternative.type === "Balanced Lifestyle"
+      alternative.type === "Easiest"
         ? "This angle softens the study rhythm and protects time for recovery, clubs and part-time work."
-        : alternative.type === "Internship-focused"
-          ? "This angle treats the degree as a platform for internships, competitions and visible practical signals."
+        : alternative.type === "Recommended"
+          ? "This angle balances progression, fit, and practical readiness as a default planning strategy."
           : recommendation.uniLife,
     professional:
-      alternative.type === "Efficient"
-        ? "This angle prioritises earlier progression and cleaner prerequisite flow into advanced study."
+      alternative.type === "Easiest"
+        ? "This angle prioritises smoother prerequisite flow and manageable term complexity."
         : alternative.type === "Cheapest"
           ? `This angle tightens the sequencing and cost language around ${residencyLabel} fee sensitivity without discarding the main university path.`
           : recommendation.professional,
@@ -1883,16 +2092,60 @@ export async function applyAlternativeResult({
     throw new Error("Current result, university, and alternative are required.");
   }
 
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 980);
-  });
-
   const recommendation = currentResult.universities?.[selectedUniversity];
   const alternative = currentResult.alternatives.find((item) => item.id === alternativeId);
 
   if (!recommendation || !alternative) {
     throw new Error("Unable to apply the requested planning angle.");
   }
+
+  const backendModeMap = {
+    Recommended: "recommended",
+    Cheapest: "cheapest",
+    Easiest: "easiest",
+  };
+
+  if (selectedUniversity === DEFAULT_UNIVERSITY && backendModeMap[alternative.type]) {
+    const mode = backendModeMap[alternative.type];
+    const backendPlan = await callBackendPlanner({
+      mode,
+      prompt: currentResult.prompt,
+      residencyStatus,
+    });
+
+    const updatedRecommendation = createBackendRecommendation({
+      planData: backendPlan,
+      prompt: currentResult.prompt,
+      modeLabel: alternative.type,
+    });
+
+    const universities = {
+      ...currentResult.universities,
+      [selectedUniversity]: updatedRecommendation,
+    };
+
+    return {
+      ...currentResult,
+      universities,
+      recommended: updatedRecommendation,
+      activeScenario: {
+        alternativeId,
+        alternativeType: alternative.type,
+        residencyStatus,
+        mode,
+      },
+      meta: {
+        ...currentResult.meta,
+        source: "backend+mock",
+        requestMode: mode,
+        selectedUniversitySupport: "UNSW live backend, all others frontend mock",
+      },
+    };
+  }
+
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, 500);
+  });
 
   const updatedRecommendation = applyAlternativeScenario(
     recommendation,
@@ -1933,16 +2186,31 @@ export async function generatePlannerResult({
     throw new Error("Prompt is required to generate a pathway.");
   }
 
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, followUpPrompt ? 650 : 850);
-  });
-
   const cleanPrompt = prompt.trim();
   const refinement = followUpPrompt?.trim();
   const universities = universityOrder.reduce((accumulator, universityName) => {
     accumulator[universityName] = createRecommendation(universityName, cleanPrompt, refinement);
     return accumulator;
   }, {});
+
+  let backendAvailable = false;
+  let backendError = "";
+  try {
+    const backendPlan = await callBackendPlanner({
+      mode: "recommended",
+      prompt: cleanPrompt,
+      residencyStatus: "domestic",
+    });
+
+    universities[DEFAULT_UNIVERSITY] = createBackendRecommendation({
+      planData: backendPlan,
+      prompt: cleanPrompt,
+      modeLabel: "Recommended",
+    });
+    backendAvailable = true;
+  } catch (error) {
+    backendError = error?.message || "Backend planner unavailable.";
+  }
 
   return {
     id: previousResultId || `planner-${Date.now()}`,
@@ -1952,10 +2220,10 @@ export async function generatePlannerResult({
     recommended: universities[DEFAULT_UNIVERSITY],
     recommendedUniversities: buildRecommendedUniversities(DEFAULT_UNIVERSITY),
     followUpSuggestions: [
-      "Make this more internship-focused",
-      "Reduce the workload in first year",
+      "Make this easiest",
       "Optimise this for lower total cost",
-      "Make this more research-heavy",
+      "Keep this as recommended",
+      "Reduce the workload in first year",
     ],
     alternatives: alternativeBlueprints.map((item, index) => ({
       id: `${item.type.toLowerCase().replace(/\s+/g, "-")}-${index}`,
@@ -1967,11 +2235,14 @@ export async function generatePlannerResult({
       ],
     })),
     meta: {
-      source: "mock-service",
-      backendReady: true,
+      source: backendAvailable ? "backend+mock" : "mock-service",
+      backendReady: backendAvailable,
       retrievalLayer: "Elastic-ready",
-      latency: refinement ? "238ms" : "182ms",
-      selectedUniversitySupport: "UNSW backend-ready, all others frontend mock",
+      latency: backendAvailable ? "live" : refinement ? "238ms" : "182ms",
+      selectedUniversitySupport: backendAvailable
+        ? "UNSW live backend, all others frontend mock"
+        : "UNSW fallback mock (backend unavailable), all others frontend mock",
+      backendError,
     },
   };
 }
