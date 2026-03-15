@@ -1618,7 +1618,7 @@ function buildRecommendedUniversities(selectedUniversity) {
       name,
       rationale: config.rationale,
       tags: config.tags,
-      cta: config.backendReady ? "Use this university" : "Explore pathway",
+      cta: "Use this university",
       tone: config.tone || "neutral",
       duration: universityMeta[name].duration,
       studyRhythm: universityMeta[name].studyRhythm,
