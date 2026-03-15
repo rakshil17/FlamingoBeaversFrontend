@@ -18,6 +18,18 @@
   --tone-vivid: #f472b6;
   --tone-scholar: #a78bfa;
   --tone-sun: #fbbf24;
+  --timeline-steady-a: color-mix(in srgb, var(--accent-2) 90%, white 10%);
+  --timeline-steady-b: color-mix(in srgb, var(--accent) 92%, white 8%);
+  --timeline-steady-c: color-mix(in srgb, var(--accent-3) 84%, white 10%);
+  --timeline-forward-a: #34d399;
+  --timeline-forward-b: #69ddff;
+  --timeline-forward-c: #b56dff;
+  --timeline-backward-a: #f87171;
+  --timeline-backward-b: #fb7185;
+  --timeline-backward-c: #f59e0b;
+  --timeline-particle-steady: radial-gradient(circle, rgba(255,255,255,0.78) 0%, color-mix(in srgb, var(--timeline-steady-a) 70%, transparent) 42%, rgba(181,109,255,0) 100%);
+  --timeline-particle-forward: radial-gradient(circle, rgba(255,255,255,0.96) 0%, color-mix(in srgb, var(--timeline-forward-b) 74%, transparent) 42%, color-mix(in srgb, var(--timeline-forward-a) 0%, transparent) 100%);
+  --timeline-particle-backward: radial-gradient(circle, rgba(255,245,245,0.96) 0%, color-mix(in srgb, var(--timeline-backward-b) 76%, transparent) 42%, color-mix(in srgb, var(--timeline-backward-a) 0%, transparent) 100%);
   --shadow: 0 18px 46px rgba(0, 0, 0, 0.22), 0 26px 80px rgba(0, 0, 0, 0.18);
   --sans: "Trebuchet MS", "Segoe UI", "Helvetica Neue", sans-serif;
   --heading: "Arial Nova", "Trebuchet MS", "Segoe UI", sans-serif;
@@ -55,6 +67,15 @@
   --tone-vivid: #ec4899;
   --tone-scholar: #c084fc;
   --tone-sun: #fde047;
+  --timeline-steady-a: #ffd166;
+  --timeline-steady-b: #ff6b4a;
+  --timeline-steady-c: #ff3d81;
+  --timeline-forward-a: #f59e0b;
+  --timeline-forward-b: #fb7185;
+  --timeline-forward-c: #ec4899;
+  --timeline-backward-a: #ef4444;
+  --timeline-backward-b: #f97316;
+  --timeline-backward-c: #f59e0b;
 
   --shadow:
     0 18px 46px rgba(0, 0, 0, 0.3),
@@ -82,6 +103,15 @@
   --tone-vivid: #e879f9;
   --tone-scholar: #a78bfa;
   --tone-sun: #facc15;
+  --timeline-steady-a: #5df2ff;
+  --timeline-steady-b: #8b7cff;
+  --timeline-steady-c: #ff66cc;
+  --timeline-forward-a: #34d399;
+  --timeline-forward-b: #38bdf8;
+  --timeline-forward-c: #a78bfa;
+  --timeline-backward-a: #f87171;
+  --timeline-backward-b: #fb7185;
+  --timeline-backward-c: #f59e0b;
 
   --shadow:
     0 18px 46px rgba(0, 0, 0, 0.28),
@@ -109,6 +139,15 @@
   --tone-vivid: #2dd4bf;
   --tone-scholar: #818cf8;
   --tone-sun: #84cc16;
+  --timeline-steady-a: #67e8f9;
+  --timeline-steady-b: #14b8a6;
+  --timeline-steady-c: #22c55e;
+  --timeline-forward-a: #22c55e;
+  --timeline-forward-b: #06b6d4;
+  --timeline-forward-c: #14b8a6;
+  --timeline-backward-a: #ef4444;
+  --timeline-backward-b: #f97316;
+  --timeline-backward-c: #facc15;
 
   --shadow:
     0 18px 46px rgba(0, 0, 0, 0.28),
@@ -432,12 +471,79 @@ select:focus {
   backdrop-filter: blur(16px);
 }
 
+.search-overlay {
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 32%),
+    radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 38%),
+    rgba(4, 10, 19, 0.82);
+}
+
 .fullscreen-switch-copy {
   width: min(560px, 100%);
   text-align: center;
   display: grid;
   gap: 10px;
   margin-top: -24px;
+  position: relative;
+  z-index: 1;
+}
+
+.switch-overlay-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  filter: blur(8px) saturate(0.92);
+  opacity: 0.78;
+}
+
+.switch-overlay-scene canvas {
+  position: absolute !important;
+  inset: 0;
+}
+
+.switch-message-orb {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 6px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at center, color-mix(in srgb, #4ade80 18%, transparent), transparent 70%),
+    transparent;
+  filter: drop-shadow(0 0 22px rgba(74, 222, 128, 0.28));
+}
+
+.switch-message-orb canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.switch-overlay-glow {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  filter: blur(48px);
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.switch-overlay-glow.glow-a {
+  top: 10%;
+  left: 14%;
+  background: color-mix(in srgb, var(--accent-2) 44%, transparent);
+}
+
+.switch-overlay-glow.glow-b {
+  right: 12%;
+  top: 16%;
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.switch-overlay-glow.glow-c {
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--accent-3) 38%, transparent);
 }
 
 .planner-loading-glow {
@@ -530,11 +636,21 @@ select:focus {
   margin-top: 14px;
 }
 
+.inline-action.secondary {
+  background: color-mix(in srgb, var(--panel-strong) 82%, transparent);
+}
+
 .loading-state,
 .empty-state,
 .error-state {
   margin-top: 26px;
   text-align: center;
+}
+
+.loading-state {
+  min-height: 78vh;
+  display: grid;
+  align-content: center;
 }
 
 .results-section {
@@ -1009,6 +1125,144 @@ select:focus {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 32%, transparent), color-mix(in srgb, var(--accent) 34%, transparent), color-mix(in srgb, var(--accent-3) 28%, transparent));
 }
 
+.timeline-progress-track {
+  position: absolute;
+  left: 0;
+  top: 34px;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.timeline-progress-fill {
+  position: relative;
+  height: 100%;
+  min-width: 18px;
+  border-radius: 999px;
+  isolation: isolate;
+}
+
+.timeline-progress-fill::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: -10px;
+  bottom: -10px;
+  border-radius: 999px;
+  z-index: -1;
+  opacity: 0.9;
+  filter: blur(12px);
+}
+
+.timeline-progress-fill.steady {
+  background: linear-gradient(90deg, var(--timeline-steady-a), var(--timeline-steady-b), var(--timeline-steady-c));
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--timeline-steady-a) 48%, transparent),
+    0 0 34px color-mix(in srgb, var(--timeline-steady-b) 40%, transparent),
+    0 0 56px color-mix(in srgb, var(--timeline-steady-c) 30%, transparent);
+  transition: width 0.95s cubic-bezier(.22,.84,.28,1);
+  animation: steadyTimelineGlow 3.2s ease-in-out infinite;
+}
+
+.timeline-progress-fill.steady::before {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--timeline-steady-a) 88%, transparent),
+    color-mix(in srgb, var(--timeline-steady-b) 88%, transparent),
+    color-mix(in srgb, var(--timeline-steady-c) 80%, transparent)
+  );
+}
+
+.timeline-progress-fill.forward {
+  background: linear-gradient(90deg, var(--timeline-forward-a) 0%, var(--timeline-forward-b) 48%, var(--timeline-forward-c) 100%);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--timeline-forward-a) 58%, transparent),
+    0 0 24px color-mix(in srgb, var(--timeline-forward-b) 46%, transparent),
+    0 0 40px color-mix(in srgb, var(--timeline-forward-c) 28%, transparent);
+  transition: width 1.15s cubic-bezier(.2,.9,.2,1);
+  animation: timelineFillPulse 1.2s ease;
+}
+
+.timeline-progress-fill.forward::before {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--timeline-forward-a) 92%, transparent),
+    color-mix(in srgb, var(--timeline-forward-b) 88%, transparent),
+    color-mix(in srgb, var(--timeline-forward-c) 82%, transparent)
+  );
+}
+
+.timeline-progress-fill.backward {
+  background: linear-gradient(90deg, var(--timeline-backward-a) 0%, var(--timeline-backward-b) 48%, var(--timeline-backward-c) 100%);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--timeline-backward-a) 58%, transparent),
+    0 0 24px color-mix(in srgb, var(--timeline-backward-b) 46%, transparent),
+    0 0 40px color-mix(in srgb, var(--timeline-backward-c) 28%, transparent);
+  transition: width 1.15s cubic-bezier(.2,.9,.2,1);
+  animation: timelineFillPulse 1.2s ease;
+}
+
+.timeline-progress-fill.backward::before {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--timeline-backward-a) 92%, transparent),
+    color-mix(in srgb, var(--timeline-backward-b) 88%, transparent),
+    color-mix(in srgb, var(--timeline-backward-c) 82%, transparent)
+  );
+}
+
+.timeline-particle {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  opacity: 0;
+  filter: blur(0.5px);
+  animation: particleTravel 1.85s linear infinite;
+}
+
+.timeline-progress-fill.steady .timeline-particle {
+  opacity: 0.55;
+  background: var(--timeline-particle-steady);
+}
+
+.timeline-progress-fill.forward .timeline-particle {
+  background: var(--timeline-particle-forward);
+}
+
+.timeline-progress-fill.backward .timeline-particle {
+  background: var(--timeline-particle-backward);
+}
+
+.particle-a {
+  animation-delay: 0s;
+}
+
+.particle-b {
+  animation-delay: 0.24s;
+}
+
+.particle-c {
+  animation-delay: 0.48s;
+}
+
+.particle-d {
+  animation-delay: 0.72s;
+}
+
+.particle-e {
+  animation-delay: 0.96s;
+}
+
+.particle-f {
+  animation-delay: 1.2s;
+}
+
 .timeline-year-row {
   position: relative;
   display: grid;
@@ -1029,18 +1283,25 @@ select:focus {
   content: "";
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 3px solid color-mix(in srgb, var(--accent-2) 42%, transparent);
   background: color-mix(in srgb, var(--panel-strong) 90%, transparent);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  clip-path: polygon(50% 0%, 88% 22%, 100% 50%, 78% 88%, 50% 100%, 12% 78%, 0% 50%, 22% 12%);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    inset -3px -3px 6px rgba(0, 0, 0, 0.28),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.08);
 }
 
 .timeline-year-button.active::before {
-  transform: scale(1.08);
+  transform: rotate(45deg) scale(1.08);
   border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-2), var(--accent), var(--accent-3));
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-2) 32%, transparent);
-  animation: rotatingMarker 5.5s linear infinite;
+  background: linear-gradient(135deg, var(--timeline-steady-a), var(--timeline-steady-b), var(--timeline-steady-c));
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--timeline-steady-a) 38%, transparent),
+    0 0 30px color-mix(in srgb, var(--timeline-steady-b) 24%, transparent);
+  animation: rotatingMarker 6.8s linear infinite;
 }
 
 .timeline-year-label {
@@ -1212,6 +1473,49 @@ select:focus {
   display: flex;
   align-items: flex-start;
   gap: 14px;
+}
+
+.alternative-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.alternative-control-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.scenario-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-2) 7%, transparent), color-mix(in srgb, var(--accent) 8%, transparent)),
+    color-mix(in srgb, var(--panel-strong) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.scenario-toggle-option {
+  min-width: 134px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.scenario-toggle-option.active {
+  color: #05111c;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent), var(--accent-3));
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .alternative-card.expanded {
@@ -1388,10 +1692,47 @@ select:focus {
 
 @keyframes rotatingMarker {
   from {
-    transform: scale(1.08) rotate(0deg);
+    transform: rotate(45deg) scale(1.08) rotate(0deg);
   }
   to {
-    transform: scale(1.08) rotate(360deg);
+    transform: rotate(45deg) scale(1.08) rotate(360deg);
+  }
+}
+
+@keyframes timelineFillPulse {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes particleTravel {
+  0% {
+    left: 0%;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.65);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 8px);
+    opacity: 0;
+    transform: translateY(-50%) scale(1.15);
+  }
+}
+
+@keyframes steadyTimelineGlow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
   }
 }
 
@@ -1460,5 +1801,19 @@ select:focus {
 
   .followup-row {
     grid-template-columns: 1fr;
+  }
+
+  .alternative-control-row {
+    justify-content: stretch;
+  }
+
+  .scenario-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-toggle-option {
+    min-width: 0;
   }
 }

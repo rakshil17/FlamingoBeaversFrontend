@@ -1754,6 +1754,85 @@ function refineRecommendation(recommendation, refinement) {
   };
 }
 
+function applyAlternativeScenario(recommendation, alternative, residencyStatus) {
+  const residencyLabel = residencyStatus === "international" ? "international" : "domestic";
+  const residencyCostHelper =
+    residencyStatus === "international"
+      ? "International fee lens"
+      : "Domestic fee lens";
+
+  const adjustedBadges = recommendation.badges.map((badge) => {
+    if (alternative.type === "Cheapest" && badge.label === "Cost") {
+      return {
+        ...badge,
+        value: residencyStatus === "international" ? "High but reduced path" : "Lower cost path",
+        helper: residencyCostHelper,
+        tone: residencyStatus === "international" ? "warning" : "success",
+      };
+    }
+
+    if (alternative.type === "Efficient" && badge.label === "Pace") {
+      return {
+        ...badge,
+        value: "Faster progression",
+        helper: "More compressed sequencing",
+        tone: "info",
+      };
+    }
+
+    if (alternative.type === "Internship-focused" && badge.label === "Workload") {
+      return {
+        ...badge,
+        value: "Moderate to ambitious",
+        helper: "Industry-facing emphasis",
+        tone: "accent",
+      };
+    }
+
+    if (alternative.type === "Balanced Lifestyle" && badge.label === "Workload") {
+      return {
+        ...badge,
+        value: "Moderate",
+        helper: "Smoother week-to-week load",
+        tone: "neutral",
+      };
+    }
+
+    return badge;
+  });
+
+  return {
+    ...recommendation,
+    keyPoint: `${recommendation.keyPoint} Scenario update: ${alternative.type.toLowerCase()} lens applied.`,
+    summary: `${alternative.summary} The ${recommendation.university} plan is now reframed through a ${alternative.type.toLowerCase()} lens${alternative.type === "Cheapest" ? ` for a ${residencyLabel} student` : ""}.`,
+    uniLife:
+      alternative.type === "Balanced Lifestyle"
+        ? "This angle softens the study rhythm and protects time for recovery, clubs and part-time work."
+        : alternative.type === "Internship-focused"
+          ? "This angle treats the degree as a platform for internships, competitions and visible practical signals."
+          : recommendation.uniLife,
+    professional:
+      alternative.type === "Efficient"
+        ? "This angle prioritises earlier progression and cleaner prerequisite flow into advanced study."
+        : alternative.type === "Cheapest"
+          ? `This angle tightens the sequencing and cost language around ${residencyLabel} fee sensitivity without discarding the main university path.`
+          : recommendation.professional,
+    why: [
+      `${alternative.type} scenario applied as an update-ready planning mode`,
+      ...alternative.rationale.slice(0, 2),
+    ],
+    badges: adjustedBadges,
+    breakdown: {
+      ...recommendation.breakdown,
+      overview: `${recommendation.breakdown.overview} ${alternative.tradeoffs}`,
+      strengths: [
+        `${alternative.type} update keeps the same planner structure while changing the planning emphasis.`,
+        ...recommendation.breakdown.strengths.slice(0, 2),
+      ],
+    },
+  };
+}
+
 export async function refinePlannerResult({
   currentResult,
   selectedUniversity,
@@ -1790,6 +1869,57 @@ export async function refinePlannerResult({
     meta: {
       ...currentResult.meta,
       latency: "96ms",
+    },
+  };
+}
+
+export async function applyAlternativeResult({
+  currentResult,
+  selectedUniversity,
+  alternativeId,
+  residencyStatus = "domestic",
+}) {
+  if (!currentResult || !selectedUniversity || !alternativeId) {
+    throw new Error("Current result, university, and alternative are required.");
+  }
+
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, 980);
+  });
+
+  const recommendation = currentResult.universities?.[selectedUniversity];
+  const alternative = currentResult.alternatives.find((item) => item.id === alternativeId);
+
+  if (!recommendation || !alternative) {
+    throw new Error("Unable to apply the requested planning angle.");
+  }
+
+  const updatedRecommendation = applyAlternativeScenario(
+    recommendation,
+    alternative,
+    residencyStatus
+  );
+  const universities = {
+    ...currentResult.universities,
+    [selectedUniversity]: updatedRecommendation,
+  };
+
+  return {
+    ...currentResult,
+    universities,
+    recommended:
+      selectedUniversity === DEFAULT_UNIVERSITY
+        ? updatedRecommendation
+        : currentResult.recommended,
+    activeScenario: {
+      alternativeId,
+      alternativeType: alternative.type,
+      residencyStatus,
+    },
+    meta: {
+      ...currentResult.meta,
+      latency: "412ms",
+      requestMode: "scenario-update",
     },
   };
 }

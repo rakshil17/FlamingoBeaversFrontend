@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Float, MeshDistortMaterial } from "@react-three/drei";
 import {
   FaArrowRight,
@@ -14,7 +14,11 @@ import {
   FaUniversity,
 } from "react-icons/fa";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { generatePlannerResult, refinePlannerResult } from "./services/plannerService";
+import {
+  applyAlternativeResult,
+  generatePlannerResult,
+  refinePlannerResult,
+} from "./services/plannerService";
 
 const alternativeIcons = {
   Cheapest: <FaCoins />,
@@ -129,23 +133,65 @@ function getYearAdvice(year) {
 
 function CoursePlanView({ plan }) {
   const [activeYear, setActiveYear] = useState(plan[0]?.year || "");
+  const [progressAnimation, setProgressAnimation] = useState("");
+  const [progressPulseKey, setProgressPulseKey] = useState(0);
+  const [displayProgressPercent, setDisplayProgressPercent] = useState(0);
   const resolvedActiveYear = plan.some((yearBlock) => yearBlock.year === activeYear)
     ? activeYear
     : plan[0]?.year || "";
   const activeBlock = plan.find((yearBlock) => yearBlock.year === resolvedActiveYear) || plan[0];
   const yearAdvice = getYearAdvice(activeBlock.year);
+  const activeIndex = Math.max(
+    0,
+    plan.findIndex((yearBlock) => yearBlock.year === activeBlock.year)
+  );
+  const progressPercent = plan.length > 1 ? (activeIndex / (plan.length - 1)) * 100 : 100;
+
+  useEffect(() => {
+    setDisplayProgressPercent(progressPercent);
+  }, [progressPercent]);
+
+  const handleYearSelect = (nextYear) => {
+    const nextIndex = plan.findIndex((yearBlock) => yearBlock.year === nextYear);
+    if (nextIndex === -1 || nextYear === activeBlock.year) return;
+    const nextProgressPercent = plan.length > 1 ? (nextIndex / (plan.length - 1)) * 100 : 100;
+
+    setProgressAnimation(nextIndex > activeIndex ? "forward" : "backward");
+    setProgressPulseKey((current) => current + 1);
+    setActiveYear(nextYear);
+    window.setTimeout(() => {
+      setDisplayProgressPercent(nextProgressPercent);
+    }, 35);
+    window.setTimeout(() => {
+      setProgressAnimation("");
+    }, 1250);
+  };
 
   return (
     <div className="course-plan-workspace">
       <div className="timeline-bar-shell">
         <div className="timeline-bar-line" />
+        <div className="timeline-progress-track">
+          <div
+            key={progressPulseKey}
+            className={`timeline-progress-fill ${progressAnimation || "steady"}`}
+            style={{ width: `${displayProgressPercent}%` }}
+          >
+            <span className="timeline-particle particle-a" />
+            <span className="timeline-particle particle-b" />
+            <span className="timeline-particle particle-c" />
+            <span className="timeline-particle particle-d" />
+            <span className="timeline-particle particle-e" />
+            <span className="timeline-particle particle-f" />
+          </div>
+        </div>
         <div className="timeline-year-row">
           {plan.map((yearBlock) => (
             <button
               key={yearBlock.year}
               type="button"
               className={`timeline-year-button ${yearBlock.year === activeBlock.year ? "active" : ""}`}
-              onClick={() => setActiveYear(yearBlock.year)}
+              onClick={() => handleYearSelect(yearBlock.year)}
             >
               <span className="timeline-year-label">{yearBlock.year}</span>
               <strong>{yearBlock.completion}%</strong>
@@ -202,7 +248,14 @@ function CoursePlanView({ plan }) {
   );
 }
 
-function AlternativeCard({ item, expanded, onToggle }) {
+function AlternativeCard({
+  item,
+  expanded,
+  onToggle,
+  residencyStatus,
+  onResidencyChange,
+  onApplyScenario,
+}) {
   return (
     <article className="alternative-card">
       <div className="alternative-card-top">
@@ -220,9 +273,39 @@ function AlternativeCard({ item, expanded, onToggle }) {
 
       <p>{item.summary}</p>
 
-      <button type="button" className="inline-action" onClick={onToggle}>
-        {expanded ? "Hide details" : "Explore this angle"}
-      </button>
+      {item.type === "Cheapest" && (
+        <div className="alternative-control-row">
+          <div className="scenario-toggle" role="group" aria-label="Residency status">
+            <button
+              type="button"
+              className={`scenario-toggle-option ${
+                residencyStatus === "domestic" ? "active" : ""
+              }`}
+              onClick={() => onResidencyChange("domestic")}
+            >
+              Domestic (HECS/CSP)
+            </button>
+            <button
+              type="button"
+              className={`scenario-toggle-option ${
+                residencyStatus === "international" ? "active" : ""
+              }`}
+              onClick={() => onResidencyChange("international")}
+            >
+              International
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="alternative-actions">
+        <button type="button" className="inline-action" onClick={onApplyScenario}>
+          Explore this angle
+        </button>
+        <button type="button" className="inline-action secondary" onClick={onToggle}>
+          {expanded ? "Hide details" : "View details"}
+        </button>
+      </div>
 
       {expanded && (
         <div className="alternative-expanded">
@@ -291,13 +374,88 @@ function PlannerHeroScene() {
 function FullscreenSwitchOverlay({ university }) {
   return (
     <div className="fullscreen-switch-overlay">
-      <PlannerLoadingScene />
+      <SwitchOverlayScene />
       <div className="fullscreen-switch-copy">
         <span className="section-kicker">Switching university</span>
         <h2>Opening {university}</h2>
         <p>Reframing the same planner workspace around a new university-specific pathway.</p>
       </div>
     </div>
+  );
+}
+
+function FullscreenSearchOverlay({ prompt }) {
+  return (
+    <div className="fullscreen-switch-overlay search-overlay">
+      <SwitchOverlayScene />
+      <div className="fullscreen-switch-copy">
+        <span className="section-kicker">Generating planner</span>
+        <h2>Building your pathway</h2>
+        <p>
+          Refreshing the full planner view for {prompt ? `"${prompt}"` : "your new search"}.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FullscreenScenarioOverlay({ alternativeType, residencyStatus }) {
+  return (
+    <div className="fullscreen-switch-overlay search-overlay">
+      <SwitchOverlayScene />
+      <div className="fullscreen-switch-copy">
+        <span className="section-kicker">Updating planner angle</span>
+        <h2>{alternativeType}</h2>
+        <p>
+          {alternativeType === "Cheapest"
+            ? `Applying a ${residencyStatus} cost lens to the current plan.`
+            : `Refreshing the planner with a ${alternativeType.toLowerCase()} scenario update.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FloatingLoadingShapes({ variant = "default" }) {
+  const groupRef = useRef(null);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.z += delta * 0.08;
+      groupRef.current.rotation.y += delta * 0.18;
+    }
+  });
+
+  const spread = variant === "overlay" ? 2.45 : 1.85;
+  const depth = variant === "overlay" ? -1.8 : -1.2;
+
+  return (
+    <group ref={groupRef}>
+      <Float speed={1.25} rotationIntensity={0.75} floatIntensity={0.8}>
+        <mesh position={[-spread, 0.68, depth]} rotation={[0.6, 0.3, 0.2]}>
+          <icosahedronGeometry args={[0.32, 1]} />
+          <MeshDistortMaterial color="#69ddff" roughness={0.08} metalness={0.48} distort={0.18} speed={1.1} />
+        </mesh>
+      </Float>
+      <Float speed={1.1} rotationIntensity={0.7} floatIntensity={0.72}>
+        <mesh position={[spread, -0.34, depth - 0.2]} rotation={[0.45, 0.82, 0.35]}>
+          <boxGeometry args={[0.36, 0.36, 0.36]} />
+          <MeshDistortMaterial color="#ff7fbc" roughness={0.12} metalness={0.36} distort={0.1} speed={1} />
+        </mesh>
+      </Float>
+      <Float speed={1.38} rotationIntensity={0.8} floatIntensity={0.66}>
+        <mesh position={[0.12, 1.45, depth - 0.55]} rotation={[0.18, 0.26, 0.96]}>
+          <torusKnotGeometry args={[0.26, 0.08, 120, 18]} />
+          <MeshDistortMaterial color="#b56dff" roughness={0.1} metalness={0.68} distort={0.08} speed={1.2} />
+        </mesh>
+      </Float>
+      <Float speed={1.2} rotationIntensity={0.62} floatIntensity={0.72}>
+        <mesh position={[0.32, -1.22, depth - 0.35]} rotation={[0.32, 0.18, 0.22]}>
+          <octahedronGeometry args={[0.24, 0]} />
+          <MeshDistortMaterial color="#ffd166" roughness={0.08} metalness={0.42} distort={0.08} speed={1} />
+        </mesh>
+      </Float>
+    </group>
   );
 }
 
@@ -309,27 +467,27 @@ function PlannerLoadingScene({ compact = false }) {
         <directionalLight position={[4, 5, 4]} intensity={1.8} color="#89e1ff" />
         <directionalLight position={[-4, -2, 2]} intensity={0.9} color="#ff8acc" />
         <Environment preset="sunset" />
-        <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1.1}>
-          <mesh position={[0, 0.1, 0]} rotation={[0.5, 0.2, 0.1]}>
-            <sphereGeometry args={[0.94, 64, 64]} />
-            <MeshDistortMaterial color="#69ddff" roughness={0.05} metalness={0.52} distort={0.34} speed={1.5} />
-          </mesh>
-        </Float>
-        <Float speed={1.2} rotationIntensity={0.9} floatIntensity={1.3}>
-          <mesh position={[0, 0.1, -0.25]} rotation={[1.2, 0.2, 0.4]}>
-            <torusGeometry args={[1.36, 0.08, 32, 180]} />
-            <MeshDistortMaterial color="#b56dff" roughness={0.08} metalness={0.7} distort={0.08} speed={1.2} />
-          </mesh>
-        </Float>
-        <Float speed={1.8} rotationIntensity={0.4} floatIntensity={1}>
-          <mesh position={[0.48, -0.62, -1.2]}>
-            <icosahedronGeometry args={[0.24, 1]} />
-            <MeshDistortMaterial color="#ff7fbc" roughness={0.12} metalness={0.34} distort={0.22} speed={1.7} />
-          </mesh>
-        </Float>
+        <FloatingLoadingShapes />
       </Canvas>
       <div className="planner-loading-glow planner-loading-glow-a" />
       <div className="planner-loading-glow planner-loading-glow-b" />
+    </div>
+  );
+}
+
+function SwitchOverlayScene() {
+  return (
+    <div className="switch-overlay-scene" aria-hidden="true">
+      <Canvas camera={{ position: [0, 0, 6.2], fov: 36 }}>
+        <ambientLight intensity={0.95} />
+        <directionalLight position={[4, 5, 5]} intensity={2.1} color="#8ce3ff" />
+        <directionalLight position={[-4, -3, 3]} intensity={1.1} color="#ff8dc7" />
+        <Environment preset="sunset" />
+        <FloatingLoadingShapes variant="overlay" />
+      </Canvas>
+      <div className="switch-overlay-glow glow-a" />
+      <div className="switch-overlay-glow glow-b" />
+      <div className="switch-overlay-glow glow-c" />
     </div>
   );
 }
@@ -351,10 +509,14 @@ export default function Plan() {
   const [selectedUniversity, setSelectedUniversity] = useState("");
   const [isRefining, setIsRefining] = useState(false);
   const [isSwitchingUniversity, setIsSwitchingUniversity] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isScenarioLoading, setIsScenarioLoading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
   const [activeAngleId, setActiveAngleId] = useState("");
+  const [residencyStatus, setResidencyStatus] = useState("domestic");
   const [pendingUniversity, setPendingUniversity] = useState("");
+  const [pendingScenario, setPendingScenario] = useState(null);
   const skipNextPromptSyncRef = useRef(false);
   const workspaceRef = useRef(null);
 
@@ -421,6 +583,7 @@ export default function Plan() {
     if (!trimmedPrompt) return;
 
     setStatus("loading");
+    setIsSearching(true);
     setError("");
     setExpandedAlternatives({});
     setActivePanel("breakdown");
@@ -435,6 +598,8 @@ export default function Plan() {
     } catch (nextError) {
       setError(nextError.message || "Unable to generate the pathway right now.");
       setStatus("error");
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -494,8 +659,10 @@ export default function Plan() {
     setIsDetailLoading(true);
     window.setTimeout(() => {
       setActivePanel(nextPanel);
-      setIsDetailLoading(false);
     }, 220);
+    window.setTimeout(() => {
+      setIsDetailLoading(false);
+    }, 420);
   };
 
   const toggleAlternative = (id) => {
@@ -503,15 +670,54 @@ export default function Plan() {
       ...current,
       [id]: !current[id],
     }));
-    setActiveAngleId((current) => (current === id ? "" : id));
-    setIsWorkspaceExpanded(true);
-    setActivePanel("breakdown");
   };
 
   const activeAngle = result?.alternatives.find((item) => item.id === activeAngleId) || null;
 
+  const handleAlternativeScenario = async (item) => {
+    if (!result) return;
+
+    setIsScenarioLoading(true);
+    setPendingScenario({
+      type: item.type,
+      residencyStatus: item.type === "Cheapest" ? residencyStatus : "domestic",
+    });
+    setExpandedAlternatives((current) => ({
+      ...current,
+      [item.id]: true,
+    }));
+
+    try {
+      const nextResult = await applyAlternativeResult({
+        currentResult: result,
+        selectedUniversity,
+        alternativeId: item.id,
+        residencyStatus: item.type === "Cheapest" ? residencyStatus : "domestic",
+      });
+      setResult(nextResult);
+      setActiveAngleId(item.id);
+      setIsWorkspaceExpanded(true);
+      setActivePanel("breakdown");
+      window.setTimeout(() => {
+        workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 40);
+    } catch (nextError) {
+      setError(nextError.message || "Unable to apply this planning angle right now.");
+    } finally {
+      setIsScenarioLoading(false);
+      setPendingScenario(null);
+    }
+  };
+
   return (
     <main className="plan-page">
+      {isSearching && <FullscreenSearchOverlay prompt={prompt.trim()} />}
+      {isScenarioLoading && pendingScenario && (
+        <FullscreenScenarioOverlay
+          alternativeType={pendingScenario.type}
+          residencyStatus={pendingScenario.residencyStatus}
+        />
+      )}
       {isSwitchingUniversity && (
         <FullscreenSwitchOverlay university={pendingUniversity || selectedUniversity} />
       )}
@@ -906,6 +1112,9 @@ export default function Plan() {
                   item={item}
                   expanded={Boolean(expandedAlternatives[item.id])}
                   onToggle={() => toggleAlternative(item.id)}
+                  residencyStatus={residencyStatus}
+                  onResidencyChange={setResidencyStatus}
+                  onApplyScenario={() => handleAlternativeScenario(item)}
                 />
               ))}
             </div>
