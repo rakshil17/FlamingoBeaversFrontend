@@ -27,6 +27,8 @@ const alternativeIcons = {
   "Balanced Lifestyle": <FaClock />,
 };
 
+let hasPlayedPlanTitleAnimation = false;
+
 function toneClass(tone) {
   return `tone-${tone || "neutral"}`;
 }
@@ -35,6 +37,10 @@ function scoreClass(score) {
   if (score >= 90) return "status-good";
   if (score >= 80) return "status-mid";
   return "status-bad";
+}
+
+function getPlanCopy(copy) {
+  return copy?.plan || {};
 }
 
 function SemanticBadge({ item }) {
@@ -56,7 +62,7 @@ function MetricCard({ item }) {
   );
 }
 
-function UniversityCard({ item, selected, onSelect }) {
+function UniversityCard({ item, selected, onSelect, ui }) {
   return (
     <article className={`university-card ${selected ? "selected" : ""}`}>
       <div className="university-card-top">
@@ -67,7 +73,7 @@ function UniversityCard({ item, selected, onSelect }) {
         {item.backendReady && (
           <span className="university-status tone-success">
             <FaCheckCircle />
-            UNSW backend-ready
+            {ui.universityBackendReady}
           </span>
         )}
       </div>
@@ -98,40 +104,28 @@ function UniversityCard({ item, selected, onSelect }) {
   );
 }
 
-function getYearAdvice(year) {
+function getYearAdvice(year, ui) {
   if (year.includes("Year 1")) {
     return {
-      focus: "Build your base properly and start showing curiosity outside class.",
-      advice: [
-        "Join case comps, societies, and beginner business events early.",
-        "Start small portfolio projects or a LinkedIn-ready profile.",
-        "Use first year to test majors before locking in a narrow path.",
-      ],
+      focus: ui.year1Focus,
+      advice: ui.year1Advice,
     };
   }
 
   if (year.includes("Year 2")) {
     return {
-      focus: "Turn coursework into signals that employers and mentors can actually see.",
-      advice: [
-        "Start applying for internships, insight programs, and winter experiences.",
-        "Take on team projects, competitions, or analyst-style extracurricular work.",
-        "Shape electives around the kind of role you want after graduation.",
-      ],
+      focus: ui.year2Focus,
+      advice: ui.year2Advice,
     };
   }
 
   return {
-    focus: "Package the degree into a confident finish and convert momentum into outcomes.",
-    advice: [
-      "Prioritise capstone quality, interviews, and graduate applications.",
-      "Use final-year projects as proof of your analytical or commercial capability.",
-      "Turn mentors, internships, and campus involvement into concrete references.",
-    ],
+    focus: ui.finalYearFocus,
+    advice: ui.finalYearAdvice,
   };
 }
 
-function CoursePlanView({ plan }) {
+function CoursePlanView({ plan, ui }) {
   const [activeYear, setActiveYear] = useState(plan[0]?.year || "");
   const [progressAnimation, setProgressAnimation] = useState("");
   const [progressPulseKey, setProgressPulseKey] = useState(0);
@@ -140,7 +134,7 @@ function CoursePlanView({ plan }) {
     ? activeYear
     : plan[0]?.year || "";
   const activeBlock = plan.find((yearBlock) => yearBlock.year === resolvedActiveYear) || plan[0];
-  const yearAdvice = getYearAdvice(activeBlock.year);
+  const yearAdvice = getYearAdvice(activeBlock.year, ui);
   const activeIndex = Math.max(
     0,
     plan.findIndex((yearBlock) => yearBlock.year === activeBlock.year)
@@ -203,15 +197,15 @@ function CoursePlanView({ plan }) {
       <section className="year-stage">
         <div className="year-stage-header">
           <div>
-            <span className="section-kicker">Active stage</span>
+            <span className="section-kicker">{ui.activeStage}</span>
             <h4>{activeBlock.year}</h4>
           </div>
-          <span className="meta-pill">{activeBlock.completion}% of pathway story mapped</span>
+          <span className="meta-pill">{activeBlock.completion}% {ui.pathwayStoryMapped}</span>
         </div>
 
         <div className="year-advice-strip">
           <div className="year-advice-lead">
-            <span className="section-kicker">Focus</span>
+            <span className="section-kicker">{ui.focus}</span>
             <p>{yearAdvice.focus}</p>
           </div>
           <div className="year-advice-points">
@@ -255,6 +249,7 @@ function AlternativeCard({
   residencyStatus,
   onResidencyChange,
   onApplyScenario,
+  ui,
 }) {
   return (
     <article className="alternative-card">
@@ -275,7 +270,7 @@ function AlternativeCard({
 
       {item.type === "Cheapest" && (
         <div className="alternative-control-row">
-          <div className="scenario-toggle" role="group" aria-label="Residency status">
+          <div className="scenario-toggle" role="group" aria-label={ui.residencyStatus}>
             <button
               type="button"
               className={`scenario-toggle-option ${
@@ -283,7 +278,7 @@ function AlternativeCard({
               }`}
               onClick={() => onResidencyChange("domestic")}
             >
-              Domestic (HECS/CSP)
+              {ui.domesticResidency}
             </button>
             <button
               type="button"
@@ -292,7 +287,7 @@ function AlternativeCard({
               }`}
               onClick={() => onResidencyChange("international")}
             >
-              International
+              {ui.internationalResidency}
             </button>
           </div>
         </div>
@@ -300,17 +295,17 @@ function AlternativeCard({
 
       <div className="alternative-actions">
         <button type="button" className="inline-action" onClick={onApplyScenario}>
-          Explore this angle
+          {ui.exploreAngle}
         </button>
         <button type="button" className="inline-action secondary" onClick={onToggle}>
-          {expanded ? "Hide details" : "View details"}
+          {expanded ? ui.hideDetails : ui.viewDetails}
         </button>
       </div>
 
       {expanded && (
         <div className="alternative-expanded">
           <div className="alternative-column">
-            <h5>Why this angle works</h5>
+            <h5>{ui.whyAngleWorks}</h5>
             <div className="bullet-list compact">
               {item.rationale.map((point) => (
                 <div key={point} className="bullet-item">
@@ -321,9 +316,9 @@ function AlternativeCard({
           </div>
 
           <div className="alternative-column">
-            <h5>Tradeoff</h5>
+            <h5>{ui.tradeoff}</h5>
             <p>{item.tradeoffs}</p>
-            <h5>Course plan shape</h5>
+            <h5>{ui.coursePlanShape}</h5>
             <div className="bullet-list compact">
               {item.compactPlan.map((point) => (
                 <div key={point} className="bullet-item">
@@ -371,45 +366,48 @@ function PlannerHeroScene() {
   );
 }
 
-function FullscreenSwitchOverlay({ university }) {
+function FullscreenSwitchOverlay({ university, ui }) {
   return (
     <div className="fullscreen-switch-overlay">
       <SwitchOverlayScene />
       <div className="fullscreen-switch-copy">
-        <span className="section-kicker">Switching university</span>
-        <h2>Opening {university}</h2>
-        <p>Reframing the same planner workspace around a new university-specific pathway.</p>
+        <span className="section-kicker">{ui.switchingUniversity}</span>
+        <h2>{ui.openingPrefix} {university}</h2>
+        <p>{ui.switchingUniversityBody}</p>
       </div>
     </div>
   );
 }
 
-function FullscreenSearchOverlay({ prompt }) {
+function FullscreenSearchOverlay({ prompt, ui }) {
   return (
     <div className="fullscreen-switch-overlay search-overlay">
       <SwitchOverlayScene />
       <div className="fullscreen-switch-copy">
-        <span className="section-kicker">Generating planner</span>
-        <h2>Building your pathway</h2>
+        <span className="section-kicker">{ui.generatingPlanner}</span>
+        <h2>{ui.buildingPathway}</h2>
         <p>
-          Refreshing the full planner view for {prompt ? `"${prompt}"` : "your new search"}.
+          {ui.refreshingPlannerFor} {prompt ? `"${prompt}"` : ui.newSearch}.
         </p>
       </div>
     </div>
   );
 }
 
-function FullscreenScenarioOverlay({ alternativeType, residencyStatus }) {
+function FullscreenScenarioOverlay({ alternativeType, residencyStatus, ui }) {
+  const residencyLabel =
+    residencyStatus === "international" ? ui.internationalShortLabel : ui.domesticShortLabel;
+
   return (
     <div className="fullscreen-switch-overlay search-overlay">
       <SwitchOverlayScene />
       <div className="fullscreen-switch-copy">
-        <span className="section-kicker">Updating planner angle</span>
+        <span className="section-kicker">{ui.updatingPlannerAngle}</span>
         <h2>{alternativeType}</h2>
         <p>
           {alternativeType === "Cheapest"
-            ? `Applying a ${residencyStatus} cost lens to the current plan.`
-            : `Refreshing the planner with a ${alternativeType.toLowerCase()} scenario update.`}
+            ? `${ui.applyingCostLensPrefix} ${residencyLabel} ${ui.applyingCostLensSuffix}`
+            : `${ui.refreshingPlannerWithAnglePrefix} ${alternativeType.toLowerCase()} ${ui.refreshingPlannerWithAngleSuffix}`}
         </p>
       </div>
     </div>
@@ -492,7 +490,130 @@ function SwitchOverlayScene() {
   );
 }
 
-export default function Plan() {
+export default function Plan({ copy, language }) {
+  const planCopy = getPlanCopy(copy);
+  const ui = {
+    activeStage: planCopy.activeStage || "Active stage",
+    pathwayStoryMapped: planCopy.pathwayStoryMapped || "of pathway story mapped",
+    focus: planCopy.focus || "Focus",
+    residencyStatus: planCopy.residencyStatus || "Residency status",
+    domesticResidency: planCopy.domesticResidency || "Domestic (HECS/CSP)",
+    internationalResidency: planCopy.internationalResidency || "International",
+    domesticShortLabel: planCopy.domesticShortLabel || "domestic",
+    internationalShortLabel: planCopy.internationalShortLabel || "international",
+    viewDetails: planCopy.viewDetails || "View details",
+    switchingUniversity: planCopy.switchingUniversity || "Switching university",
+    openingPrefix: planCopy.openingPrefix || "Opening",
+    switchingUniversityBody:
+      planCopy.switchingUniversityBody ||
+      "Reframing the same planner workspace around a new university-specific pathway.",
+    generatingPlanner: planCopy.generatingPlanner || "Generating planner",
+    buildingPathway: planCopy.buildingPathway || "Building your pathway",
+    refreshingPlannerFor: planCopy.refreshingPlannerFor || "Refreshing the full planner view for",
+    newSearch: planCopy.newSearch || "your new search",
+    updatingPlannerAngle: planCopy.updatingPlannerAngle || "Updating planner angle",
+    applyingCostLensPrefix: planCopy.applyingCostLensPrefix || "Applying a",
+    applyingCostLensSuffix: planCopy.applyingCostLensSuffix || "cost lens to the current plan.",
+    refreshingPlannerWithAnglePrefix:
+      planCopy.refreshingPlannerWithAnglePrefix || "Refreshing the planner with a",
+    refreshingPlannerWithAngleSuffix:
+      planCopy.refreshingPlannerWithAngleSuffix || "scenario update.",
+    generating: planCopy.generating || "Generating...",
+    search: planCopy.search || "Search",
+    idleKicker: planCopy.idleKicker || "Start with a prompt",
+    idleTitle: planCopy.idleTitle || "Your recommended pathway will appear here.",
+    idleBody:
+      planCopy.idleBody ||
+      "Ask for a degree route, a transfer pathway, or the planning style you care about most. The frontend is already structured for a future API response shape.",
+    loadingKicker: planCopy.loadingKicker || "Generating planner output",
+    loadingTitle: planCopy.loadingTitle || "Generating your planner workspace...",
+    loadingBody:
+      planCopy.loadingBody ||
+      "Simulating the future request cycle with a premium AI planning handoff: prompt in, recommendation and roadmap out.",
+    errorKicker: planCopy.errorKicker || "Something went wrong",
+    errorTitle: planCopy.errorTitle || "We couldn't generate the pathway.",
+    primaryAnswer: planCopy.primaryAnswer || "Primary answer",
+    fitScore: planCopy.fitScore || "Fit score",
+    uniLifeImpact: planCopy.uniLifeImpact || "Uni life impact",
+    professionalBenefits: planCopy.professionalBenefits || "Professional benefits",
+    refineLabel: planCopy.refineLabel || "Refine the AI answer",
+    refinePlaceholder:
+      planCopy.refinePlaceholder ||
+      "Make it more internship-focused, lower workload, or more cost-efficient",
+    refineButton: planCopy.refineButton || "Refine",
+    refining: planCopy.refining || "Refining...",
+    summarySignals: planCopy.summarySignals || "Summary signals",
+    selectedUniversity: planCopy.selectedUniversity || "Selected university",
+    switchUniversity: planCopy.switchUniversity || "Switch university",
+    switchUniversityBody:
+      planCopy.switchUniversityBody ||
+      "Changing this updates the recommendation, signals, and roadmap instantly.",
+    updating: planCopy.updating || "Updating",
+    backendNote:
+      planCopy.backendNote ||
+      "UNSW is the only current frontend selection prepared for later backend compatibility.",
+    selectUniversityFallback:
+      planCopy.selectUniversityFallback || "Select a university recommendation below.",
+    serviceState: planCopy.serviceState || "Service state",
+    recommendedUniversities: planCopy.recommendedUniversities || "Recommended universities",
+    universitiesTitle: planCopy.universitiesTitle || "Australian university options to explore next",
+    universitiesBody:
+      planCopy.universitiesBody ||
+      "Mock recommendations for the currently allowed Australian universities: Go8 plus UTS and Macquarie University.",
+    plannerWorkspace: planCopy.plannerWorkspace || "Planner workspace",
+    deeperDetail: planCopy.deeperDetail || "Deeper detail",
+    usingPrefix: planCopy.usingPrefix || "Using",
+    exploreRecommendation: planCopy.exploreRecommendation || "Explore the recommendation",
+    viewBreakdown: planCopy.viewBreakdown || "View breakdown",
+    viewCoursePlan: planCopy.viewCoursePlan || "View course plan",
+    useThisUniversityHint:
+      planCopy.useThisUniversityHint ||
+      "Choose Use this university on any recommendation card to open a deeper planner workspace with a timeline roadmap, goals, and advice.",
+    goals: planCopy.goals || "Goals",
+    advice: planCopy.advice || "Advice",
+    activeAngle: planCopy.activeAngle || "Active angle",
+    keyStrengths: planCopy.keyStrengths || "Key strengths",
+    sampleCourses: planCopy.sampleCourses || "Sample courses",
+    primaryGoal: planCopy.primaryGoal || "Primary goal",
+    guidance: planCopy.guidance || "Guidance",
+    angleEmphasis: planCopy.angleEmphasis || "Angle emphasis",
+    alternativesKicker: planCopy.alternativesKicker || "Alternative perspectives",
+    alternativesTitle: planCopy.alternativesTitle || "Explore other ways to shape the same goal",
+    alternativesBody:
+      planCopy.alternativesBody ||
+      "These stay secondary to the primary recommendation and expand only when needed.",
+    whyAngleWorks: planCopy.whyAngleWorks || "Why this angle works",
+    tradeoff: planCopy.tradeoff || "Tradeoff",
+    coursePlanShape: planCopy.coursePlanShape || "Course plan shape",
+    hideDetails: planCopy.hideDetails || "Hide details",
+    exploreAngle: planCopy.exploreAngle || "Explore this angle",
+    universityBackendReady: planCopy.universityBackendReady || "UNSW backend-ready",
+    generateError: planCopy.generateError || "Unable to generate the pathway right now.",
+    refineError: planCopy.refineError || "Unable to refine the pathway right now.",
+    applyAngleError: planCopy.applyAngleError || "Unable to apply this planning angle right now.",
+    year1Focus:
+      planCopy.year1Focus || "Build your base properly and start showing curiosity outside class.",
+    year1Advice: planCopy.year1Advice || [
+      "Join case comps, societies, and beginner business events early.",
+      "Start small portfolio projects or a LinkedIn-ready profile.",
+      "Use first year to test majors before locking in a narrow path.",
+    ],
+    year2Focus:
+      planCopy.year2Focus || "Turn coursework into signals that employers and mentors can actually see.",
+    year2Advice: planCopy.year2Advice || [
+      "Start applying for internships, insight programs, and winter experiences.",
+      "Take on team projects, competitions, or analyst-style extracurricular work.",
+      "Shape electives around the kind of role you want after graduation.",
+    ],
+    finalYearFocus:
+      planCopy.finalYearFocus || "Package the degree into a confident finish and convert momentum into outcomes.",
+    finalYearAdvice: planCopy.finalYearAdvice || [
+      "Prioritise capstone quality, interviews, and graduate applications.",
+      "Use final-year projects as proof of your analytical or commercial capability.",
+      "Turn mentors, internships, and campus involvement into concrete references.",
+    ],
+  };
+
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryPrompt = searchParams.get("prompt") || "";
@@ -517,12 +638,29 @@ export default function Plan() {
   const [residencyStatus, setResidencyStatus] = useState("domestic");
   const [pendingUniversity, setPendingUniversity] = useState("");
   const [pendingScenario, setPendingScenario] = useState(null);
+  const [titleSettled, setTitleSettled] = useState(hasPlayedPlanTitleAnimation);
   const skipNextPromptSyncRef = useRef(false);
   const workspaceRef = useRef(null);
 
   useEffect(() => {
     setPrompt(initialPrompt);
   }, [initialPrompt]);
+
+  useEffect(() => {
+    if (hasPlayedPlanTitleAnimation) {
+      setTitleSettled(true);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      hasPlayedPlanTitleAnimation = true;
+      setTitleSettled(true);
+    }, 2350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     if (!initialPrompt) return;
@@ -538,14 +676,14 @@ export default function Plan() {
       setError("");
 
       try {
-        const nextResult = await generatePlannerResult({ prompt: initialPrompt });
+        const nextResult = await generatePlannerResult({ prompt: initialPrompt, locale: language });
         if (!isActive) return;
         setResult(nextResult);
         setSelectedUniversity(nextResult.defaultUniversity || "UNSW Sydney");
         setStatus("success");
       } catch (nextError) {
         if (!isActive) return;
-        setError(nextError.message || "Unable to generate the pathway right now.");
+        setError(nextError.message || ui.generateError);
         setStatus("error");
       }
     };
@@ -555,7 +693,7 @@ export default function Plan() {
     return () => {
       isActive = false;
     };
-  }, [initialPrompt]);
+  }, [initialPrompt, language]);
 
   const selectedUniversityData = useMemo(() => {
     if (!result) return null;
@@ -591,12 +729,12 @@ export default function Plan() {
     syncPromptToUrl(trimmedPrompt);
 
     try {
-      const nextResult = await generatePlannerResult({ prompt: trimmedPrompt });
+      const nextResult = await generatePlannerResult({ prompt: trimmedPrompt, locale: language });
       setResult(nextResult);
       setSelectedUniversity(nextResult.defaultUniversity || "UNSW Sydney");
       setStatus("success");
     } catch (nextError) {
-      setError(nextError.message || "Unable to generate the pathway right now.");
+      setError(nextError.message || ui.generateError);
       setStatus("error");
     } finally {
       setIsSearching(false);
@@ -615,11 +753,12 @@ export default function Plan() {
         currentResult: result,
         selectedUniversity,
         followUpPrompt: refinement,
+        locale: language,
       });
       setResult(nextResult);
       setFollowUpPrompt("");
     } catch (nextError) {
-      setError(nextError.message || "Unable to refine the pathway right now.");
+      setError(nextError.message || ui.refineError);
     } finally {
       setIsRefining(false);
     }
@@ -702,7 +841,7 @@ export default function Plan() {
         workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
     } catch (nextError) {
-      setError(nextError.message || "Unable to apply this planning angle right now.");
+      setError(nextError.message || ui.applyAngleError);
     } finally {
       setIsScenarioLoading(false);
       setPendingScenario(null);
@@ -711,15 +850,16 @@ export default function Plan() {
 
   return (
     <main className="plan-page">
-      {isSearching && <FullscreenSearchOverlay prompt={prompt.trim()} />}
+      {isSearching && <FullscreenSearchOverlay prompt={prompt.trim()} ui={ui} />}
       {isScenarioLoading && pendingScenario && (
         <FullscreenScenarioOverlay
           alternativeType={pendingScenario.type}
           residencyStatus={pendingScenario.residencyStatus}
+          ui={ui}
         />
       )}
       {isSwitchingUniversity && (
-        <FullscreenSwitchOverlay university={pendingUniversity || selectedUniversity} />
+        <FullscreenSwitchOverlay university={pendingUniversity || selectedUniversity} ui={ui} />
       )}
 
       <section className="plan-hero glass-panel">
@@ -729,21 +869,22 @@ export default function Plan() {
         <div className="plan-hero-copy">
           <div className="eyebrow">
             <FaBrain />
-            FlamingoBeavers AI planner
+            {planCopy.eyebrow || "FlamingoBeavers AI planner"}
           </div>
 
-          <h1>Search for any degree, pathway, or student priority.</h1>
+          <h1 className={`plan-hero-title ${titleSettled ? "is-settled" : "is-shuffling"}`}>
+            {planCopy.title || "Search for any degree, pathway, or student priority."}
+          </h1>
 
           <p className="plan-subtext">
-            Enter a natural-language prompt and FlamingoBeavers returns a primary
-            recommended pathway, alternative angles, and a generated course plan
-            structure ready for a future backend and Elastic pipeline.
+            {planCopy.subtext ||
+              "Enter a natural-language prompt and FlamingoBeavers returns a primary recommended pathway, alternative angles, and a generated course plan structure ready for a future backend and Elastic pipeline."}
           </p>
         </div>
 
         <div className="planner-search-shell">
           <label className="composer-label" htmlFor="planner-prompt">
-            What do you want to study or optimise for?
+            {planCopy.label || "What do you want to study or optimise for?"}
           </label>
 
           <div className="planner-search-box">
@@ -751,11 +892,14 @@ export default function Plan() {
               id="planner-prompt"
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder='Try: "I want a UNSW pathway into engineering that is efficient, internship-friendly, and manageable."'
+              placeholder={
+                planCopy.placeholder ||
+                'Try: "I want a UNSW pathway into engineering that is efficient, internship-friendly, and manageable."'
+              }
             />
 
             <button type="button" className="search-btn" onClick={handleSearch}>
-              {status === "loading" ? "Generating..." : "Search"}
+              {status === "loading" ? ui.generating : ui.search}
               <FaArrowRight />
             </button>
           </div>
@@ -764,32 +908,25 @@ export default function Plan() {
 
       {status === "idle" && (
         <section className="empty-state glass-panel fade-up">
-          <span className="section-kicker">Start with a prompt</span>
-          <h2>Your recommended pathway will appear here.</h2>
-          <p>
-            Ask for a degree route, a transfer pathway, or the planning style
-            you care about most. The frontend is already structured for a future
-            API response shape.
-          </p>
+          <span className="section-kicker">{ui.idleKicker}</span>
+          <h2>{ui.idleTitle}</h2>
+          <p>{ui.idleBody}</p>
         </section>
       )}
 
       {status === "loading" && (
         <section className="loading-state glass-panel fade-up">
           <PlannerLoadingScene />
-          <span className="section-kicker">Generating planner output</span>
-          <h2>Generating your planner workspace...</h2>
-          <p>
-            Simulating the future request cycle with a premium AI planning handoff:
-            prompt in, recommendation and roadmap out.
-          </p>
+          <span className="section-kicker">{ui.loadingKicker}</span>
+          <h2>{ui.loadingTitle}</h2>
+          <p>{ui.loadingBody}</p>
         </section>
       )}
 
       {status === "error" && (
         <section className="error-state glass-panel fade-up">
-          <span className="section-kicker">Something went wrong</span>
-          <h2>We couldn&apos;t generate the pathway.</h2>
+          <span className="section-kicker">{ui.errorKicker}</span>
+          <h2>{ui.errorTitle}</h2>
           <p>{error}</p>
         </section>
       )}
@@ -800,13 +937,13 @@ export default function Plan() {
             <article className={`recommended-card glass-panel ${isRefining || isSwitchingUniversity ? "section-updating" : ""}`}>
               <div className="recommended-header">
                 <div>
-                  <span className="plan-type">Primary answer</span>
+                  <span className="plan-type">{ui.primaryAnswer}</span>
                   <h2>{activeRecommendation.title}</h2>
                   <p className="key-point">{activeRecommendation.keyPoint}</p>
                 </div>
 
                 <div className={`fit-score-panel ${scoreClass(activeRecommendation.fitScore)}`}>
-                  <span>Fit score</span>
+                  <span>{ui.fitScore}</span>
                   <strong>{activeRecommendation.fitScore}/100</strong>
                 </div>
               </div>
@@ -827,18 +964,18 @@ export default function Plan() {
 
               <div className="recommended-two-col">
                 <div className="insight-box">
-                  <h4>Uni life impact</h4>
+                  <h4>{ui.uniLifeImpact}</h4>
                   <p>{activeRecommendation.uniLife}</p>
                 </div>
                 <div className="insight-box">
-                  <h4>Professional benefits</h4>
+                  <h4>{ui.professionalBenefits}</h4>
                   <p>{activeRecommendation.professional}</p>
                 </div>
               </div>
 
               <div className="followup-box">
                 <label className="composer-label" htmlFor="follow-up-prompt">
-                  Refine the AI answer
+                  {ui.refineLabel}
                 </label>
 
                 <div className="followup-row">
@@ -847,10 +984,10 @@ export default function Plan() {
                     className="followup-input"
                     value={followUpPrompt}
                     onChange={(event) => setFollowUpPrompt(event.target.value)}
-                    placeholder="Make it more internship-focused, lower workload, or more cost-efficient"
+                    placeholder={ui.refinePlaceholder}
                   />
                   <button type="button" className="primary-card-btn" onClick={handleFollowUp}>
-                    {isRefining ? "Refining..." : "Refine"}
+                    {isRefining ? ui.refining : ui.refineButton}
                   </button>
                 </div>
 
@@ -871,7 +1008,7 @@ export default function Plan() {
 
             <aside className={`results-rail glass-panel ${isRefining || isSwitchingUniversity ? "section-updating" : ""}`}>
               <div className="rail-block">
-                <span className="section-kicker">Summary signals</span>
+                <span className="section-kicker">{ui.summarySignals}</span>
                 <div className="bullet-list compact">
                   {activeRecommendation.why.map((point) => (
                     <div key={point} className="bullet-item">
@@ -882,15 +1019,15 @@ export default function Plan() {
               </div>
 
               <div className="rail-block">
-                <span className="section-kicker">Selected university</span>
+                <span className="section-kicker">{ui.selectedUniversity}</span>
                 {selectedUniversityData ? (
                   <div className="selected-university-card">
                     <div className="university-select-shell">
                       <div className="university-select-copy">
                         <label className="composer-label" htmlFor="selected-university">
-                          Switch university
+                          {ui.switchUniversity}
                         </label>
-                        <p>Changing this updates the recommendation, signals, and roadmap instantly.</p>
+                        <p>{ui.switchUniversityBody}</p>
                       </div>
                       <div className="university-select-wrap">
                         <select
@@ -922,24 +1059,24 @@ export default function Plan() {
                       {isSwitchingUniversity && (
                         <span className="meta-pill active-loading-pill">
                           <FaCircle />
-                          Updating
+                          {ui.updating}
                         </span>
                       )}
                     </div>
                     <p>{selectedUniversityData.rationale}</p>
                     {activeRecommendation.backendReady && (
                       <div className="backend-note tone-success">
-                        UNSW is the only current frontend selection prepared for later backend compatibility.
+                        {ui.backendNote}
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p>Select a university recommendation below.</p>
+                  <p>{ui.selectUniversityFallback}</p>
                 )}
               </div>
 
               <div className="rail-block">
-                <span className="section-kicker">Service state</span>
+                <span className="section-kicker">{ui.serviceState}</span>
                 <div className="meta-pills">
                   <span className="meta-pill">{result.meta.source}</span>
                   <span className="meta-pill">{result.meta.latency}</span>
@@ -952,12 +1089,9 @@ export default function Plan() {
 
           <section className={`universities-section glass-panel ${isWorkspaceExpanded ? "workspace-hidden" : ""}`}>
             <div className="section-heading planner-section-heading">
-              <span className="section-kicker">Recommended universities</span>
-              <h3>Australian university options to explore next</h3>
-              <p>
-                Mock recommendations for the currently allowed Australian universities:
-                Go8 plus UTS and Macquarie University.
-              </p>
+              <span className="section-kicker">{ui.recommendedUniversities}</span>
+              <h3>{ui.universitiesTitle}</h3>
+              <p>{ui.universitiesBody}</p>
             </div>
 
             <div className="universities-grid">
@@ -966,6 +1100,7 @@ export default function Plan() {
                   key={item.id}
                   item={item}
                   selected={item.name === selectedUniversity}
+                  ui={ui}
                   onSelect={() =>
                     handleUniversitySelection(item.name, { expandWorkspace: true })
                   }
@@ -981,12 +1116,12 @@ export default function Plan() {
             <div className="detail-panel-top">
               <div>
                 <span className="section-kicker">
-                  {isWorkspaceExpanded ? "Planner workspace" : "Deeper detail"}
+                  {isWorkspaceExpanded ? ui.plannerWorkspace : ui.deeperDetail}
                 </span>
                 <h3>
                   {isWorkspaceExpanded
-                    ? `Using ${selectedUniversityData?.name || selectedUniversity}`
-                    : "Explore the recommendation"}
+                    ? `${ui.usingPrefix} ${selectedUniversityData?.name || selectedUniversity}`
+                    : ui.exploreRecommendation}
                 </h3>
               </div>
 
@@ -996,24 +1131,21 @@ export default function Plan() {
                   className={`panel-toggle ${activePanel === "breakdown" ? "active" : ""}`}
                   onClick={() => handlePanelChange("breakdown")}
                 >
-                  View breakdown
+                  {ui.viewBreakdown}
                 </button>
                 <button
                   type="button"
                   className={`panel-toggle ${activePanel === "coursePlan" ? "active" : ""}`}
                   onClick={() => handlePanelChange("coursePlan")}
                 >
-                  View course plan
+                  {ui.viewCoursePlan}
                 </button>
               </div>
             </div>
 
             {!isWorkspaceExpanded ? (
               <div className="detail-panel-body workspace-closed">
-                <p>
-                  Choose <strong>Use this university</strong> on any recommendation card to
-                  open a deeper planner workspace with a timeline roadmap, goals, and advice.
-                </p>
+                <p>{ui.useThisUniversityHint}</p>
               </div>
             ) : isDetailLoading || isSwitchingUniversity ? (
               <div className="detail-panel-body detail-loading-state">
@@ -1029,16 +1161,16 @@ export default function Plan() {
                 <div className="workspace-summary">
                   <div className="workspace-notes">
                     <div className="workspace-note">
-                      <span className="section-kicker">Goals</span>
+                      <span className="section-kicker">{ui.goals}</span>
                       <p>{activeRecommendation.summary}</p>
                     </div>
                     <div className="workspace-note">
-                      <span className="section-kicker">Advice</span>
+                      <span className="section-kicker">{ui.advice}</span>
                       <p>{activeRecommendation.professional}</p>
                     </div>
                     {activeAngle && (
                       <div className="workspace-note accent-note">
-                        <span className="section-kicker">Active angle</span>
+                        <span className="section-kicker">{ui.activeAngle}</span>
                         <p>{activeAngle.summary}</p>
                       </div>
                     )}
@@ -1049,7 +1181,7 @@ export default function Plan() {
 
                 <div className="expanded-grid">
                   <div className="expanded-card">
-                    <h5>Key strengths</h5>
+                    <h5>{ui.keyStrengths}</h5>
                     <div className="bullet-list compact">
                       {activeRecommendation.breakdown.strengths.map((item) => (
                         <div key={item} className="bullet-item">
@@ -1060,7 +1192,7 @@ export default function Plan() {
                   </div>
 
                   <div className="expanded-card">
-                    <h5>Sample courses</h5>
+                    <h5>{ui.sampleCourses}</h5>
                     <div className="sample-course-list">
                       {activeRecommendation.breakdown.sampleCourses.map((course) => (
                         <div key={course.code} className="sample-course">
@@ -1078,31 +1210,31 @@ export default function Plan() {
                 <div className="workspace-summary">
                   <div className="workspace-notes">
                     <div className="workspace-note">
-                      <span className="section-kicker">Primary goal</span>
+                      <span className="section-kicker">{ui.primaryGoal}</span>
                       <p>{activeRecommendation.keyPoint}</p>
                     </div>
                     <div className="workspace-note">
-                      <span className="section-kicker">Guidance</span>
+                      <span className="section-kicker">{ui.guidance}</span>
                       <p>{activeRecommendation.uniLife}</p>
                     </div>
                     {activeAngle && (
                       <div className="workspace-note accent-note">
-                        <span className="section-kicker">Angle emphasis</span>
+                        <span className="section-kicker">{ui.angleEmphasis}</span>
                         <p>{activeAngle.tradeoffs}</p>
                       </div>
                     )}
                   </div>
                 </div>
-                <CoursePlanView plan={activeRecommendation.coursePlan} />
+                <CoursePlanView plan={activeRecommendation.coursePlan} ui={ui} />
               </div>
             )}
           </section>
 
           <section className="alternatives-section">
             <div className="section-heading planner-section-heading">
-              <span className="section-kicker">Alternative perspectives</span>
-              <h3>Explore other ways to shape the same goal</h3>
-              <p>These stay secondary to the primary recommendation and expand only when needed.</p>
+              <span className="section-kicker">{ui.alternativesKicker}</span>
+              <h3>{ui.alternativesTitle}</h3>
+              <p>{ui.alternativesBody}</p>
             </div>
 
             <div className="alternative-grid">
@@ -1115,6 +1247,7 @@ export default function Plan() {
                   residencyStatus={residencyStatus}
                   onResidencyChange={setResidencyStatus}
                   onApplyScenario={() => handleAlternativeScenario(item)}
+                  ui={ui}
                 />
               ))}
             </div>

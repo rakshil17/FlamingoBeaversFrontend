@@ -1,11 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { FiVolume2 } from "react-icons/fi";
+import { speechConfig } from "../i18n";
 import "./TTS.css";
 
-const TTS = () => {
+const TTS = ({ language, unsupportedMessage }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState(null);
   const [text, setText] = useState("");
+  const [voices, setVoices] = useState([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      return undefined;
+    }
+
+    const updateVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+
+    updateVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
+
+    return () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+    };
+  }, []);
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -67,21 +86,31 @@ const TTS = () => {
     };
   }, []);
 
+  const getMatchingVoice = () => {
+    const config = speechConfig[language] || speechConfig.en;
+    return voices.find((voice) =>
+      config.voicePrefixes.some((prefix) => voice.lang.toLowerCase().startsWith(prefix.toLowerCase())),
+    );
+  };
+
   const handleSpeak = () => {
     if (!text) return;
 
-    if (
-      typeof window === "undefined" ||
-      !("speechSynthesis" in window)
-    ) {
-      alert("Text-to-speech is not supported in this browser.");
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      alert(unsupportedMessage);
       return;
     }
 
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-AU";
+    const config = speechConfig[language] || speechConfig.en;
+    const matchingVoice = getMatchingVoice();
+
+    utterance.lang = config.lang;
+    if (matchingVoice) {
+      utterance.voice = matchingVoice;
+    }
     utterance.rate = 1;
     utterance.pitch = 1;
 

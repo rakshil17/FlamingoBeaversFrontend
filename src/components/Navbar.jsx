@@ -1,4 +1,4 @@
-import { FaArrowRight, FaChevronDown, FaPalette } from "react-icons/fa";
+import { FaArrowRight, FaChevronDown, FaGlobe, FaPalette } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import "./Navbar.css";
 
@@ -15,7 +15,16 @@ function labelize(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function Navbar({ theme, palette, onThemeChange, onPaletteChange }) {
+function Navbar({
+  copy,
+  theme,
+  palette,
+  language,
+  languages,
+  onThemeChange,
+  onPaletteChange,
+  onLanguageChange,
+}) {
   return (
     <header className="navbar-shell">
       <nav className="navbar">
@@ -23,20 +32,46 @@ function Navbar({ theme, palette, onThemeChange, onPaletteChange }) {
           <span className="navbar-logo-mark" />
           <span>
             <strong>FlamingoBeavers</strong>
-            <small>AI pathway planning studio</small>
+            <small>{copy.meta.brandSubtitle}</small>
           </span>
         </Link>
 
         <div className="navbar-links" aria-label="Primary">
           <NavLink to="/" className={({ isActive }) => (isActive ? "active" : "")}>
-            Home
+            {copy.nav.home}
           </NavLink>
           <NavLink to="/plan" className={({ isActive }) => (isActive ? "active" : "")}>
-            Planner
+            {copy.nav.planner}
           </NavLink>
         </div>
 
         <div className="navbar-actions">
+          <details className="appearance-dropdown">
+            <summary className="appearance-summary">
+              <FaGlobe />
+              <span>{languages.find((option) => option.code === language)?.label || "English"}</span>
+              <FaChevronDown className="appearance-chevron" />
+            </summary>
+
+            <div className="appearance-panel">
+              <div className="appearance-field">
+                <span>{copy.nav.language}</span>
+                <div className="appearance-option-row" role="group" aria-label={copy.nav.language}>
+                  {languages.map((option) => (
+                    <button
+                      key={option.code}
+                      type="button"
+                      className={`appearance-option ${language === option.code ? "active" : ""}`}
+                      onClick={() => onLanguageChange(option.code)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </details>
+
           <details className="appearance-dropdown">
             <summary className="appearance-summary">
               <FaPalette />
@@ -46,7 +81,7 @@ function Navbar({ theme, palette, onThemeChange, onPaletteChange }) {
 
             <div className="appearance-panel">
               <div className="appearance-field">
-                <span>Theme</span>
+                <span>{copy.nav.theme}</span>
                 <div className="appearance-option-row" role="group" aria-label="Palette theme">
                   {paletteOptions.map((option) => (
                     <button
@@ -62,7 +97,7 @@ function Navbar({ theme, palette, onThemeChange, onPaletteChange }) {
               </div>
 
               <div className="appearance-field">
-                <span>Mode</span>
+                <span>{copy.nav.mode}</span>
                 <div className="appearance-option-row" role="group" aria-label="Light or dark mode">
                   {themeOptions.map((option) => (
                     <button
@@ -80,7 +115,7 @@ function Navbar({ theme, palette, onThemeChange, onPaletteChange }) {
           </details>
 
           <Link to="/plan" className="navbar-button">
-            Open Planner
+            {copy.nav.openPlanner}
             <FaArrowRight />
           </Link>
         </div>
