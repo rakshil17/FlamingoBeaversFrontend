@@ -152,6 +152,10 @@
   gap: 8px;
 }
 
+.appearance-option-row button {
+  min-height: 42px;
+}
+
 .appearance-option {
   appearance: none;
   border: 1px solid var(--border-soft);

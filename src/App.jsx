@@ -4,10 +4,12 @@ import Home from "./Home";
 import Plan from "./Plan";
 import Navbar from "./components/Navbar";
 import TTS from "./components/TTS";
+import { getCopy, languageOptions } from "./i18n";
 import "./App.css";
 
 const THEME_KEY = "flamingobeavers-theme";
 const PALETTE_KEY = "flamingobeavers-palette";
+const LANGUAGE_KEY = "flamingobeavers-language";
 const paletteOptions = ["classic", "sunset", "aurora", "lagoon"];
 
 const getInitialTheme = () => {
@@ -24,10 +26,17 @@ const getInitialPalette = () => {
   return paletteOptions.includes(storedPalette) ? storedPalette : "classic";
 };
 
+const getInitialLanguage = () => {
+  const storedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
+  return languageOptions.some((option) => option.code === storedLanguage) ? storedLanguage : "en";
+};
+
 const App = () => {
   const [theme, setTheme] = useState(getInitialTheme);
   const [palette, setPalette] = useState(getInitialPalette);
+  const [language, setLanguage] = useState(getInitialLanguage);
   const [pointerPosition, setPointerPosition] = useState({ x: 50, y: 24 });
+  const copy = getCopy(language);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -38,6 +47,11 @@ const App = () => {
     document.documentElement.dataset.palette = palette;
     window.localStorage.setItem(PALETTE_KEY, palette);
   }, [palette]);
+
+  useEffect(() => {
+    document.documentElement.lang = copy.meta.htmlLang;
+    window.localStorage.setItem(LANGUAGE_KEY, language);
+  }, [copy.meta.htmlLang, language]);
 
   useEffect(() => {
     const handlePointerMove = (event) => {
@@ -69,17 +83,21 @@ const App = () => {
         />
 
         <Navbar
+          copy={copy}
           theme={theme}
           palette={palette}
+          language={language}
+          languages={languageOptions}
           onThemeChange={setTheme}
           onPaletteChange={setPalette}
+          onLanguageChange={setLanguage}
         />
 
-        <TTS />
+        <TTS language={language} unsupportedMessage={copy.meta.ttsUnsupported} />
 
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/plan" element={<Plan />} />
+          <Route path="/" element={<Home copy={copy} />} />
+          <Route path="/plan" element={<Plan copy={copy} language={language} />} />
         </Routes>
       </div>
     </Router>

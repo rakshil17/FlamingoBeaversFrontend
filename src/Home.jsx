@@ -13,33 +13,6 @@ import {
 } from "react-icons/fa";
 import "./Home.css";
 
-const featuredPrompts = [
-  "I want a flexible UNSW pathway into psychology with room for exchange.",
-  "Show me the cheapest pathway into engineering with solid job prospects.",
-  "Help me compare internship-focused options for commerce and data.",
-];
-
-const signals = [
-  {
-    icon: <FaCompass />,
-    title: "Prompt-first planning",
-    copy:
-      "Students describe goals in natural language and receive a structured pathway recommendation.",
-  },
-  {
-    icon: <FaLayerGroup />,
-    title: "Multiple planning angles",
-    copy:
-      "The AI returns a recommended route plus cheaper, faster, internship-focused, and lifestyle-balanced perspectives.",
-  },
-  {
-    icon: <FaCalendarAlt />,
-    title: "Course plan visibility",
-    copy:
-      "Every answer can unfold into terms, courses, and rationale so the recommendation feels tangible.",
-  },
-];
-
 function HeroScene() {
   return (
     <div className="hero-scene">
@@ -76,36 +49,39 @@ function HeroScene() {
     </div>
   );
 }
-function Home() {
+function Home({ copy }) {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const hasPrompt = prompt.trim().length > 0;
+  const signals = [
+    { icon: <FaCompass />, ...copy.home.signals[0] },
+    { icon: <FaLayerGroup />, ...copy.home.signals[1] },
+    { icon: <FaCalendarAlt />, ...copy.home.signals[2] },
+  ];
 
   const previewCopy = useMemo(() => {
     const trimmedPrompt = prompt.trim();
 
     if (!trimmedPrompt) {
       return {
-        title: "Start typing to preview the planner",
-        body:
-          "As soon as the user describes a degree, pathway style, or what matters most, the preview card wakes up and starts mirroring the AI planning flow.",
-        score: "--/100",
-        duration: "Awaiting prompt",
-        angle: "Recommended view",
-        nextStep: "Type to activate preview",
+        title: copy.home.preview.emptyTitle,
+        body: copy.home.preview.emptyBody,
+        score: copy.home.preview.emptyScore,
+        duration: copy.home.preview.emptyDuration,
+        angle: copy.home.preview.emptyAngle,
+        nextStep: copy.home.preview.emptyNextStep,
       };
     }
 
     return {
       title: trimmedPrompt.length > 58 ? `${trimmedPrompt.slice(0, 58)}...` : trimmedPrompt,
-      body:
-        "The planner will turn this into a recommended pathway, alternatives, a course-plan breakdown, and richer planning lenses.",
+      body: copy.home.preview.filledBody,
       score: "94/100",
-      duration: "3.1 years est.",
-      angle: "Internship-focused alternative",
-      nextStep: "Launch planner with this prompt",
+      duration: copy.home.preview.filledDuration,
+      angle: copy.home.preview.filledAngle,
+      nextStep: copy.home.preview.filledNextStep,
     };
-  }, [prompt]);
+  }, [copy.home.preview, prompt]);
 
   const submitPrompt = (value) => {
     const nextPrompt = value.trim();
@@ -140,16 +116,12 @@ function Home() {
         <div className="hero-copy fade-up">
           <div className="eyebrow">
             <FaUniversity />
-            FlamingoBeavers pathway planning
+            {copy.home.eyebrow}
           </div>
 
-          <h1>AI-guided degree planning.</h1>
+          <h1>{copy.home.title}</h1>
 
-          <p className="hero-description">
-            Describe the degree you want, the pathway style you prefer, or what
-            matters most. FlamingoBeavers turns that into a recommended academic
-            path with colorful alternative angles you can refine in follow-up prompts.
-          </p>
+          <p className="hero-description">{copy.home.description}</p>
 
           <form className="hero-search" onSubmit={handleSubmit}>
             <div className={`hero-search-shell ${hasPrompt ? "active" : ""}`}>
@@ -157,25 +129,23 @@ function Home() {
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder='Try: "I want a balanced UNSW commerce pathway with internship opportunities and manageable workload."'
-                aria-label="Describe the UNSW pathway you want help planning"
+                placeholder={copy.home.textareaPlaceholder}
+                aria-label={copy.home.textareaAria}
               />
             </div>
 
             <div className="hero-action-row">
               <button type="submit" className="hero-search-button">
-                Launch Planner
+                {copy.home.launchPlanner}
                 <FaArrowRight />
               </button>
 
-              <div className="hero-helper-copy">
-                Natural-language input, structured output, backend-ready request flow.
-              </div>
+              <div className="hero-helper-copy">{copy.home.helperCopy}</div>
             </div>
           </form>
 
           <div className="prompt-row">
-            {featuredPrompts.map((item) => (
+            {copy.home.featuredPrompts.map((item) => (
               <button
                 key={item}
                 type="button"
@@ -188,18 +158,12 @@ function Home() {
           </div>
 
           <div className="hero-stats">
-            <div className="stat-card">
-              <span>Primary answer</span>
-              <strong>Recommended Pathway</strong>
-            </div>
-            <div className="stat-card">
-              <span>Alt perspectives</span>
-              <strong>Cost, speed, research, exchange</strong>
-            </div>
-            <div className="stat-card">
-              <span>Backend-ready</span>
-              <strong>Prepared for API + Elastic</strong>
-            </div>
+            {copy.home.stats.map((item) => (
+              <div key={item.label} className="stat-card">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -209,14 +173,14 @@ function Home() {
           }`}
         >
           <div className="preview-topline">
-            <span className="preview-pill">AI planner preview</span>
-            <span className="preview-status">{hasPrompt ? "Live prompt" : "Idle"}</span>
+            <span className="preview-pill">{copy.home.preview.pill}</span>
+            <span className="preview-status">{hasPrompt ? copy.home.preview.live : copy.home.preview.idle}</span>
           </div>
 
           <div className="preview-card">
             <div className="preview-title">
               <FaBrain />
-              {hasPrompt ? "Prompt detected" : "Waiting for a prompt"}
+              {hasPrompt ? copy.home.preview.detected : copy.home.preview.waiting}
             </div>
             <h2>{previewCopy.title}</h2>
             <p>{previewCopy.body}</p>
@@ -224,19 +188,19 @@ function Home() {
 
           <div className="preview-grid">
             <div className="mini-panel preview-good">
-              <span>Fit score</span>
+              <span>{copy.home.preview.fitScore}</span>
               <strong>{previewCopy.score}</strong>
             </div>
             <div className="mini-panel preview-calm">
-              <span>Duration</span>
+              <span>{copy.home.preview.duration}</span>
               <strong>{previewCopy.duration}</strong>
             </div>
             <div className="mini-panel preview-warm">
-              <span>Alternative</span>
+              <span>{copy.home.preview.alternative}</span>
               <strong>{previewCopy.angle}</strong>
             </div>
             <div className="mini-panel preview-vivid">
-              <span>Next step</span>
+              <span>{copy.home.preview.nextStep}</span>
               <strong>{previewCopy.nextStep}</strong>
             </div>
           </div>
@@ -245,8 +209,8 @@ function Home() {
 
       <section className="signals-section">
         <div className="section-heading">
-          <span className="section-kicker">Why it feels useful</span>
-          <h2>Built for exploratory students, not just rigid course checklists.</h2>
+          <span className="section-kicker">{copy.home.why.kicker}</span>
+          <h2>{copy.home.why.title}</h2>
         </div>
 
         <div className="signals-grid">

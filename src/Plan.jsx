@@ -14,27 +14,29 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { generatePlannerResult } from "./services/plannerService";
 
 const alternativeIcons = {
-  Cheapest: <FaCoins />,
-  Efficient: <FaBolt />,
-  "Internship-focused": <FaMapMarkedAlt />,
-  "Balanced Lifestyle": <FaClock />,
+  0: <FaCoins />,
+  1: <FaBolt />,
+  2: <FaMapMarkedAlt />,
+  3: <FaClock />,
 };
+
+let hasPlayedPlanTitleAnimation = false;
 
 function toneClass(tone) {
   return `tone-${tone || "info"}`;
 }
 
-function CoursePlanView({ plan }) {
+function CoursePlanView({ copy, plan }) {
   return (
     <div className="course-plan-wrap">
       {plan.map((yearBlock) => (
         <section key={yearBlock.year} className={`year-block ${toneClass(yearBlock.tone)}`}>
           <div className="year-heading">
             <div>
-              <span className="section-kicker">Generated plan</span>
+              <span className="section-kicker">{copy.plan.generatedPlan}</span>
               <h4>{yearBlock.year}</h4>
             </div>
-            <span className="meta-pill">Placeholder academic structure</span>
+            <span className="meta-pill">{copy.plan.placeholderStructure}</span>
           </div>
 
           <div className="term-grid">
@@ -63,12 +65,12 @@ function CoursePlanView({ plan }) {
   );
 }
 
-function AlternativeCard({ item, expanded, onToggle }) {
+function AlternativeCard({ copy, item, expanded, onToggle }) {
   return (
     <article className={`alternative-card ${toneClass(item.tone)} ${expanded ? "expanded" : ""}`}>
       <div className="alternative-card-top">
         <div className="alternative-main">
-          <div className="alternative-icon">{alternativeIcons[item.type] || <FaLightbulb />}</div>
+          <div className="alternative-icon">{alternativeIcons[item.iconKey] || <FaLightbulb />}</div>
           <div>
             <span className="alternative-badge">{item.badge}</span>
             <h4>{item.type}</h4>
@@ -80,13 +82,13 @@ function AlternativeCard({ item, expanded, onToggle }) {
       <p>{item.summary}</p>
 
       <button type="button" className="inline-action" onClick={onToggle}>
-        {expanded ? "Hide details" : "Explore this angle"}
+        {expanded ? copy.plan.hideDetails : copy.plan.exploreAngle}
       </button>
 
       {expanded && (
         <div className="alternative-expanded">
           <div className="alternative-column">
-            <h5>Why this angle works</h5>
+            <h5>{copy.plan.whyAngleWorks}</h5>
             <div className="bullet-list compact">
               {item.rationale.map((point) => (
                 <div key={point} className="bullet-item">
@@ -97,9 +99,9 @@ function AlternativeCard({ item, expanded, onToggle }) {
           </div>
 
           <div className="alternative-column">
-            <h5>Tradeoff</h5>
+            <h5>{copy.plan.tradeoff}</h5>
             <p>{item.tradeoffs}</p>
-            <h5>Course plan shape</h5>
+            <h5>{copy.plan.coursePlanShape}</h5>
             <div className="bullet-list compact">
               {item.compactPlan.map((point) => (
                 <div key={point} className="bullet-item">
@@ -114,7 +116,7 @@ function AlternativeCard({ item, expanded, onToggle }) {
   );
 }
 
-export default function Plan() {
+export default function Plan({ copy, language }) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryPrompt = searchParams.get("prompt") || "";
@@ -128,11 +130,28 @@ export default function Plan() {
   const [error, setError] = useState("");
   const [activePanel, setActivePanel] = useState("breakdown");
   const [expandedAlternatives, setExpandedAlternatives] = useState({});
+  const [titleSettled, setTitleSettled] = useState(hasPlayedPlanTitleAnimation);
   const skipNextPromptSyncRef = useRef(false);
 
   useEffect(() => {
     setPrompt(initialPrompt);
   }, [initialPrompt]);
+
+  useEffect(() => {
+    if (hasPlayedPlanTitleAnimation) {
+      setTitleSettled(true);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      hasPlayedPlanTitleAnimation = true;
+      setTitleSettled(true);
+    }, 2350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     if (!initialPrompt) return;
@@ -148,13 +167,13 @@ export default function Plan() {
       setError("");
 
       try {
-        const nextResult = await generatePlannerResult({ prompt: initialPrompt });
+        const nextResult = await generatePlannerResult({ prompt: initialPrompt, locale: language });
         if (!isActive) return;
         setResult(nextResult);
         setStatus("success");
       } catch (nextError) {
         if (!isActive) return;
-        setError(nextError.message || "Unable to generate the pathway right now.");
+        setError(nextError.message || copy.plan.errorTitle);
         setStatus("error");
       }
     };
@@ -164,7 +183,7 @@ export default function Plan() {
     return () => {
       isActive = false;
     };
-  }, [initialPrompt]);
+  }, [copy.plan.errorTitle, initialPrompt, language]);
 
   const metaPills = useMemo(() => {
     if (!result) return [];
@@ -173,7 +192,7 @@ export default function Plan() {
       result.meta.source,
       result.meta.latency,
       result.meta.retrievalLayer,
-      result.meta.backendReady ? "backend-ready" : "mock-only",
+      result.meta.backendReady ? result.meta.backendReadyLabel || "backend-ready" : result.meta.mockOnlyLabel || "mock-only",
     ];
   }, [result]);
 
@@ -199,11 +218,11 @@ export default function Plan() {
     syncPromptToUrl(trimmedPrompt);
 
     try {
-      const nextResult = await generatePlannerResult({ prompt: trimmedPrompt });
+      const nextResult = await generatePlannerResult({ prompt: trimmedPrompt, locale: language });
       setResult(nextResult);
       setStatus("success");
     } catch (nextError) {
-      setError(nextError.message || "Unable to generate the pathway right now.");
+      setError(nextError.message || copy.plan.errorTitle);
       setStatus("error");
     }
   };
@@ -220,15 +239,18 @@ export default function Plan() {
         prompt: prompt.trim(),
         previousResultId: result.id,
         followUpPrompt: refinement,
+        locale: language,
       });
       setResult(nextResult);
-      setFollowUpPrompt("");
-      setActivePanel("breakdown");
       setStatus("success");
     } catch (nextError) {
-      setError(nextError.message || "Unable to refine the pathway right now.");
+      setError(nextError.message || copy.plan.errorTitle);
       setStatus("error");
+      return;
     }
+
+    setFollowUpPrompt("");
+    setActivePanel("breakdown");
   };
 
   const toggleAlternative = (id) => {
@@ -244,21 +266,19 @@ export default function Plan() {
         <div className="plan-hero-copy">
           <div className="eyebrow">
             <FaBrain />
-            FlamingoBeavers AI planner
+            {copy.plan.eyebrow}
           </div>
 
-          <h1>Search for any degree, pathway, or student priority.</h1>
+          <h1 className={`plan-hero-title ${titleSettled ? "is-settled" : "is-shuffling"}`}>
+            {copy.plan.title}
+          </h1>
 
-          <p className="plan-subtext">
-            Enter a natural-language prompt and FlamingoBeavers returns a primary
-            recommended pathway, alternative angles, and a generated course plan
-            structure ready for a future backend and Elastic pipeline.
-          </p>
+          <p className="plan-subtext">{copy.plan.subtext}</p>
         </div>
 
         <div className="planner-search-shell">
           <label className="composer-label" htmlFor="planner-prompt">
-            What do you want to study or optimise for?
+            {copy.plan.label}
           </label>
 
           <div className="planner-search-box">
@@ -266,11 +286,11 @@ export default function Plan() {
               id="planner-prompt"
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder='Try: "I want a UNSW pathway into engineering that is efficient, internship-friendly, and manageable."'
+              placeholder={copy.plan.placeholder}
             />
 
             <button type="button" className="search-btn" onClick={handleSearch}>
-              {status === "loading" ? "Generating..." : "Search"}
+              {status === "loading" ? copy.plan.generating : copy.plan.search}
               <FaArrowRight />
             </button>
           </div>
@@ -279,32 +299,25 @@ export default function Plan() {
 
       {status === "idle" && (
         <section className="empty-state glass-panel fade-up">
-          <span className="section-kicker">Start with a prompt</span>
-          <h2>Your recommended pathway will appear here.</h2>
-          <p>
-            Ask for a degree route, a transfer pathway, or the planning style
-            you care about most. The frontend is already structured for a future
-            API response shape.
-          </p>
+          <span className="section-kicker">{copy.plan.idleKicker}</span>
+          <h2>{copy.plan.idleTitle}</h2>
+          <p>{copy.plan.idleBody}</p>
         </section>
       )}
 
       {status === "loading" && (
         <section className="loading-state glass-panel fade-up">
           <div className="loading-orb" />
-          <span className="section-kicker">Generating planner output</span>
-          <h2>Building a mock FlamingoBeavers recommendation flow...</h2>
-          <p>
-            Simulating the future request cycle: prompt in, retrieval-backed
-            planning response out.
-          </p>
+          <span className="section-kicker">{copy.plan.loadingKicker}</span>
+          <h2>{copy.plan.loadingTitle}</h2>
+          <p>{copy.plan.loadingBody}</p>
         </section>
       )}
 
       {status === "error" && (
         <section className="error-state glass-panel fade-up">
-          <span className="section-kicker">Something went wrong</span>
-          <h2>We couldn&apos;t generate the pathway.</h2>
+          <span className="section-kicker">{copy.plan.errorKicker}</span>
+          <h2>{copy.plan.errorTitle}</h2>
           <p>{error}</p>
         </section>
       )}
@@ -315,13 +328,13 @@ export default function Plan() {
             <article className={`recommended-card glass-panel ${toneClass(result.recommended.scoreTone)}`}>
               <div className="recommended-header">
                 <div>
-                  <span className="plan-type">Primary answer</span>
+                  <span className="plan-type">{copy.plan.primaryAnswer}</span>
                   <h2>{result.recommended.title}</h2>
                   <p className="key-point">{result.recommended.keyPoint}</p>
                 </div>
 
                 <div className={`fit-score-panel ${toneClass(result.recommended.scoreTone)}`}>
-                  <span>Fit score</span>
+                  <span>{copy.plan.fitScore}</span>
                   <strong>{result.recommended.fitScore}/100</strong>
                 </div>
               </div>
@@ -353,18 +366,18 @@ export default function Plan() {
 
               <div className="recommended-two-col">
                 <div className="insight-box tone-calm">
-                  <h4>Uni life impact</h4>
+                  <h4>{copy.plan.uniLifeImpact}</h4>
                   <p>{result.recommended.uniLife}</p>
                 </div>
                 <div className="insight-box tone-vivid">
-                  <h4>Professional benefits</h4>
+                  <h4>{copy.plan.professionalBenefits}</h4>
                   <p>{result.recommended.professional}</p>
                 </div>
               </div>
 
               <div className="followup-box">
                 <label className="composer-label" htmlFor="follow-up-prompt">
-                  Refine the AI answer
+                  {copy.plan.refineLabel}
                 </label>
 
                 <div className="followup-row">
@@ -373,10 +386,10 @@ export default function Plan() {
                     className="followup-input"
                     value={followUpPrompt}
                     onChange={(event) => setFollowUpPrompt(event.target.value)}
-                    placeholder="Make it more internship-focused, lower workload, or more cost-efficient"
+                    placeholder={copy.plan.refinePlaceholder}
                   />
                   <button type="button" className="primary-card-btn" onClick={handleFollowUp}>
-                    Refine
+                    {copy.plan.refineButton}
                   </button>
                 </div>
 
@@ -397,7 +410,7 @@ export default function Plan() {
 
             <aside className="results-rail glass-panel">
               <div className="rail-block">
-                <span className="section-kicker">Response metadata</span>
+                <span className="section-kicker">{copy.plan.responseMetadata}</span>
                 <div className="meta-pills">
                   {metaPills.map((item) => (
                     <span key={item} className="meta-pill">
@@ -408,7 +421,7 @@ export default function Plan() {
               </div>
 
               <div className="rail-block">
-                <span className="section-kicker">Why this route</span>
+                <span className="section-kicker">{copy.plan.whyThisRoute}</span>
                 <div className="bullet-list compact">
                   {result.recommended.why.map((point) => (
                     <div key={point} className="bullet-item">
@@ -422,22 +435,16 @@ export default function Plan() {
                 <div className="route-accent-icon">
                   <FaRegCompass />
                 </div>
-                <h4>Recommendation focus</h4>
-                <p>
-                  Strong overall fit with enough flexibility to refine toward cost,
-                  speed, internships, exchange, or research balance.
-                </p>
+                <h4>{copy.plan.recommendationFocus}</h4>
+                <p>{copy.plan.recommendationFocusBody}</p>
               </div>
 
               <div className="rail-block route-accent tone-sun">
                 <div className="route-accent-icon">
                   <FaShapes />
                 </div>
-                <h4>Extra pathway options</h4>
-                <p>
-                  Explore additional route shapes like double degree planning,
-                  transfer starts, scholarship pacing, and exchange-safe sequencing.
-                </p>
+                <h4>{copy.plan.extraOptions}</h4>
+                <p>{copy.plan.extraOptionsBody}</p>
               </div>
             </aside>
           </div>
@@ -445,8 +452,8 @@ export default function Plan() {
           <section className="detail-panel glass-panel">
             <div className="detail-panel-top">
               <div>
-                <span className="section-kicker">Deeper detail</span>
-                <h3>Explore the recommendation</h3>
+                <span className="section-kicker">{copy.plan.deeperDetail}</span>
+                <h3>{copy.plan.exploreRecommendation}</h3>
               </div>
 
               <div className="panel-toggle-group">
@@ -455,14 +462,14 @@ export default function Plan() {
                   className={`panel-toggle ${activePanel === "breakdown" ? "active" : ""}`}
                   onClick={() => setActivePanel("breakdown")}
                 >
-                  View breakdown
+                  {copy.plan.viewBreakdown}
                 </button>
                 <button
                   type="button"
                   className={`panel-toggle ${activePanel === "coursePlan" ? "active" : ""}`}
                   onClick={() => setActivePanel("coursePlan")}
                 >
-                  View course plan
+                  {copy.plan.viewCoursePlan}
                 </button>
               </div>
             </div>
@@ -473,7 +480,7 @@ export default function Plan() {
 
                 <div className="expanded-grid">
                   <div className="expanded-card tone-info">
-                    <h5>Key strengths</h5>
+                    <h5>{copy.plan.keyStrengths}</h5>
                     <div className="bullet-list compact">
                       {result.recommended.breakdown.strengths.map((item) => (
                         <div key={item} className="bullet-item">
@@ -484,7 +491,7 @@ export default function Plan() {
                   </div>
 
                   <div className="expanded-card tone-vivid">
-                    <h5>Sample courses</h5>
+                    <h5>{copy.plan.sampleCourses}</h5>
                     <div className="sample-course-list">
                       {result.recommended.breakdown.sampleCourses.map((course) => (
                         <div key={course.code} className="sample-course">
@@ -499,25 +506,23 @@ export default function Plan() {
               </div>
             ) : (
               <div className="detail-panel-body">
-                <CoursePlanView plan={result.recommended.coursePlan} />
+                <CoursePlanView copy={copy} plan={result.recommended.coursePlan} />
               </div>
             )}
           </section>
 
           <section className="alternatives-section">
             <div className="section-heading">
-              <span className="section-kicker">Alternative perspectives</span>
-              <h3>Explore other ways to shape the same UNSW goal.</h3>
-              <p>
-                These cards use the same response contract as the recommended
-                answer, so they can later be fed by real backend retrieval and generation.
-              </p>
+              <span className="section-kicker">{copy.plan.alternativesKicker}</span>
+              <h3>{copy.plan.alternativesTitle}</h3>
+              <p>{copy.plan.alternativesBody}</p>
             </div>
 
             <div className="alternative-grid">
               {result.alternatives.map((item) => (
                 <AlternativeCard
                   key={item.id}
+                  copy={copy}
                   item={item}
                   expanded={Boolean(expandedAlternatives[item.id])}
                   onToggle={() => toggleAlternative(item.id)}

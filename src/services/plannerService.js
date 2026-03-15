@@ -1,201 +1,99 @@
-const alternativeBlueprints = [
-  {
-    type: "Cheapest",
-    badge: "Lower spend",
-    tone: "good",
-    summary:
-      "Optimises around lower-cost progression and avoids unnecessary complexity early.",
-    rationale: [
-      "Favors efficient sequencing and fewer costly detours.",
-      "Keeps flexibility for electives without overloading the first year.",
-      "Useful when budget certainty matters alongside degree progress.",
-    ],
-    tradeoffs:
-      "May leave less room for broad exploratory electives if cost minimisation stays the priority.",
-  },
-  {
-    type: "Efficient",
-    badge: "Faster progression",
-    tone: "info",
-    summary:
-      "Streamlines the sequence so core requirements are unlocked as early as practical.",
-    rationale: [
-      "Reduces bottlenecks that can delay later-stage subjects.",
-      "Builds momentum toward specialisation earlier in the degree.",
-      "Helpful for students who want a cleaner, more direct path.",
-    ],
-    tradeoffs:
-      "The pace can feel more intense because flexibility is traded for clearer sequencing.",
-  },
-  {
-    type: "Internship-focused",
-    badge: "Career signal",
-    tone: "vivid",
-    summary:
-      "Shapes the pathway around employability, project experience, and time for professional exposure.",
-    rationale: [
-      "Preserves space for internships, projects, and resume-building electives.",
-      "Prioritises subjects that create stronger evidence of applied capability.",
-      "Useful when students want earlier industry alignment.",
-    ],
-    tradeoffs:
-      "May prioritise practical outcomes over broader academic exploration in the short term.",
-  },
-  {
-    type: "Balanced Lifestyle",
-    badge: "Sustainable load",
-    tone: "calm",
-    summary:
-      "Balances ambition with a steadier study rhythm and more room for extracurricular life.",
-    rationale: [
-      "Avoids stacking the hardest subjects too aggressively.",
-      "Supports societies, part-time work, and personal recovery time.",
-      "Helps maintain consistency across multiple terms.",
-    ],
-    tradeoffs:
-      "Usually prioritises sustainability over absolute shortest completion time.",
-  },
-  {
-    type: "Research-led",
-    badge: "Deeper inquiry",
-    tone: "scholar",
-    summary:
-      "Leans into theory, analytical depth, and stronger preparation for honours or research pathways.",
-    rationale: [
-      "Builds stronger grounding for advanced inquiry and independent investigation.",
-      "Prioritises subjects with deeper conceptual challenge.",
-      "Useful for students considering postgraduate study or research-heavy careers.",
-    ],
-    tradeoffs:
-      "Can feel less immediately industry-focused compared with internship-led planning.",
-  },
-  {
-    type: "Exchange-friendly",
-    badge: "Global mobility",
-    tone: "sun",
-    summary:
-      "Keeps progression flexible so students can more easily fit exchange or international experiences into the degree.",
-    rationale: [
-      "Protects flexibility in sequencing and elective choice.",
-      "Avoids stacking too many rigid prerequisites early where possible.",
-      "Useful when students care about optional travel or broader global exposure.",
-    ],
-    tradeoffs:
-      "May require slightly more careful sequencing to preserve room later in the degree.",
-  },
-];
+import { formatCopy, getCopy } from "../i18n";
 
-const pathwayLenses = [
-  { label: "Double degree route", tone: "vivid" },
-  { label: "Transfer-friendly start", tone: "sun" },
-  { label: "Scholarship-aware pacing", tone: "good" },
-  { label: "Exchange-safe sequencing", tone: "calm" },
-];
-
-function buildCoursePlan(topic, emphasis) {
+function buildCoursePlan(topic, emphasis, serviceCopy) {
   return [
     {
-      year: "Year 1",
+      year: serviceCopy.year1,
       tone: "good",
       terms: [
         {
-          name: "Term 1",
+          name: serviceCopy.term1,
           units: "12 UOC",
           tone: "good",
           courses: [
             {
               code: "UNSW1001",
-              name: `${topic} Foundations`,
-              description:
-                "Introduces the discipline landscape, study habits, and core concepts needed for later progression.",
+              name: `${topic} ${serviceCopy.foundations}`,
+              description: serviceCopy.introducesLandscape,
             },
             {
               code: "UNSW1020",
-              name: "Academic Communication and Analysis",
-              description:
-                "Builds writing, collaboration, and evidence-based reasoning skills for university work.",
+              name: serviceCopy.academicCommunication,
+              description: serviceCopy.academicCommunicationDescription,
             },
           ],
         },
         {
-          name: "Term 2",
+          name: serviceCopy.term2,
           units: "12 UOC",
           tone: "info",
           courses: [
             {
               code: "UNSW1105",
-              name: `${topic} Core Methods`,
-              description:
-                "Develops the main quantitative or analytical techniques relevant to this pathway.",
+              name: `${topic} ${serviceCopy.coreMethods}`,
+              description: serviceCopy.developsTechniques,
             },
             {
               code: "UNSW1120",
-              name: `${emphasis} Elective`,
-              description:
-                "Adds early alignment with the planning angle highlighted in the recommendation.",
+              name: `${emphasis} ${serviceCopy.elective}`,
+              description: serviceCopy.addsEarlyAlignment,
             },
           ],
         },
         {
-          name: "Term 3",
+          name: serviceCopy.term3,
           units: "12 UOC",
           tone: "vivid",
           courses: [
             {
               code: "UNSW1201",
-              name: "Applied Projects in Context",
-              description:
-                "Connects first-year learning to realistic UNSW-style projects and teamwork scenarios.",
+              name: serviceCopy.appliedProjects,
+              description: serviceCopy.appliedProjectsDescription,
             },
             {
               code: "UNSW1230",
-              name: "Exploratory Discipline Elective",
-              description:
-                "Creates room to test an adjacent interest or strengthen a complementary skill area.",
+              name: serviceCopy.exploratoryElective,
+              description: serviceCopy.exploratoryElectiveDescription,
             },
           ],
         },
       ],
     },
     {
-      year: "Year 2",
+      year: serviceCopy.year2,
       tone: "sun",
       terms: [
         {
-          name: "Term 1",
+          name: serviceCopy.term1,
           units: "12 UOC",
           tone: "sun",
           courses: [
             {
               code: "UNSW2104",
-              name: `${topic} Intermediate Practice`,
-              description:
-                "Moves into discipline-specific practice while keeping progression manageable.",
+              name: `${topic} ${serviceCopy.intermediatePractice}`,
+              description: serviceCopy.movesIntoPractice,
             },
             {
               code: "UNSW2140",
-              name: "Professional Experience Preparation",
-              description:
-                "Prepares students for internships, projects, or more advanced team-based study.",
+              name: serviceCopy.professionalExperiencePreparation,
+              description: serviceCopy.professionalExperiencePreparationDescription,
             },
           ],
         },
         {
-          name: "Term 2",
+          name: serviceCopy.term2,
           units: "12 UOC",
           tone: "scholar",
           courses: [
             {
               code: "UNSW2202",
-              name: `${emphasis} Strategy Studio`,
-              description:
-                "Uses the chosen pathway angle as the lens for deeper planning and decision-making.",
+              name: `${emphasis} ${serviceCopy.strategyStudio}`,
+              description: serviceCopy.deeperPlanning,
             },
             {
               code: "UNSW2218",
-              name: "Interdisciplinary Elective",
-              description:
-                "Broadens capability and keeps the overall pathway flexible for later refinement.",
+              name: serviceCopy.interdisciplinaryElective,
+              description: serviceCopy.interdisciplinaryElectiveDescription,
             },
           ],
         },
@@ -211,7 +109,8 @@ function getScoreTone(score) {
   return "calm";
 }
 
-function buildPlannerResponse({ prompt, followUpPrompt, previousResultId }) {
+function buildPlannerResponse({ prompt, followUpPrompt, previousResultId, locale }) {
+  const serviceCopy = getCopy(locale).plannerService;
   const cleanPrompt = prompt.trim();
   const refinement = followUpPrompt?.trim();
   const topic = cleanPrompt
@@ -219,7 +118,7 @@ function buildPlannerResponse({ prompt, followUpPrompt, previousResultId }) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 42) || "UNSW pathway";
-  const emphasis = refinement ? "Refined Pathway" : "Recommended Pathway";
+  const emphasis = refinement ? serviceCopy.refinedPathway : serviceCopy.recommendedPathway;
   const now = Date.now();
   const fitScore = refinement ? 96 : 94;
 
@@ -232,93 +131,70 @@ function buildPlannerResponse({ prompt, followUpPrompt, previousResultId }) {
           { role: "user", content: refinement },
         ]
       : [{ role: "user", content: cleanPrompt }],
-    followUpSuggestions: [
-      "Make this more internship-focused",
-      "Reduce the workload in first year",
-      "Optimise this for lower total cost",
-      "Give me a stronger exchange-friendly version",
-      "Show a double degree-friendly version",
-      "Lean more toward research opportunities",
-    ],
+    followUpSuggestions: serviceCopy.followUps,
     recommended: {
-      title: refinement ? "Refined Recommended Pathway" : "Recommended Pathway",
+      title: refinement ? serviceCopy.refinedRecommendedTitle : serviceCopy.recommendedPathway,
       subtitle: refinement
-        ? `Updated to reflect: "${refinement}"`
-        : "Best overall fit for progression, flexibility, and long-term opportunity.",
+        ? formatCopy(serviceCopy.updatedToReflect, { refinement })
+        : serviceCopy.bestFitSubtitle,
       fitScore,
       scoreTone: getScoreTone(fitScore),
-      duration: refinement ? "3.0 years est." : "3.2 years est.",
-      cost: refinement ? "$32,800 est." : "$33,900 est.",
-      difficulty: refinement ? "Moderate" : "Moderate to ambitious",
+      duration: refinement ? serviceCopy.durationRefined : serviceCopy.durationBase,
+      cost: refinement ? serviceCopy.costRefined : serviceCopy.costBase,
+      difficulty: refinement ? serviceCopy.difficultyRefined : serviceCopy.difficultyBase,
       summary: refinement
-        ? `Using your original prompt plus the follow-up "${refinement}", this pathway shifts the balance while keeping UNSW progression realistic.`
-        : `Based on "${cleanPrompt}", this is the strongest overall mock recommendation for a polished UNSW planning experience.`,
-      keyPoint:
-        "Balances academic progression, employability, optionality, and a realistic student workload.",
-      uniLife:
-        "Designed to keep room for clubs, social life, and project work without turning every term into overload.",
-      professional:
-        "Keeps the pathway legible for future internships, graduate roles, and portfolio development.",
-      why: [
-        "Strong alignment with the student's prompt intent",
-        "Good balance between foundations and later flexibility",
-        "Clear enough to become a future backend-generated plan shape",
-      ],
-      stats: [
-        { label: "Progress confidence", value: "High", tone: "good" },
-        { label: "Flexibility", value: "Strong", tone: "info" },
-        { label: "Career momentum", value: "High", tone: "vivid" },
-        { label: "Lifestyle fit", value: "Balanced", tone: "calm" },
-      ],
+        ? formatCopy(serviceCopy.refinedSummary, { refinement })
+        : formatCopy(serviceCopy.baseSummary, { prompt: cleanPrompt }),
+      keyPoint: serviceCopy.keyPoint,
+      uniLife: serviceCopy.uniLife,
+      professional: serviceCopy.professional,
+      why: serviceCopy.why,
+      stats: serviceCopy.stats,
       breakdown: {
-        overview:
-          "The recommendation spaces foundational requirements first, then gradually introduces more career-relevant and exploratory study choices.",
-        strengths: [
-          "Early sequencing reduces common progression friction",
-          "Maintains flexibility for electives and specialisation",
-          "Supports both employability and sustainable workload",
-        ],
+        overview: serviceCopy.overview,
+        strengths: serviceCopy.strengths,
         sampleCourses: [
           {
             code: "UNSW1001",
-            name: `${topic} Foundations`,
-            description:
-              "Builds the first layer of knowledge and university study capability.",
+            name: `${topic} ${serviceCopy.foundations}`,
+            description: serviceCopy.sampleFoundationDescription,
           },
           {
             code: "UNSW2140",
-            name: "Professional Experience Preparation",
-            description:
-              "Helps students translate academic choices into employability and internship readiness.",
+            name: serviceCopy.professionalExperiencePreparation,
+            description: serviceCopy.sampleProfessionalDescription,
           },
           {
             code: "UNSW2202",
-            name: `${emphasis} Strategy Studio`,
-            description:
-              "Demonstrates how planning emphasis can influence subject choice and sequencing.",
+            name: `${emphasis} ${serviceCopy.strategyStudio}`,
+            description: serviceCopy.sampleStrategyDescription,
           },
         ],
       },
-      coursePlan: buildCoursePlan(topic, emphasis),
+      coursePlan: buildCoursePlan(topic, emphasis, serviceCopy),
     },
-    pathways: pathwayLenses,
-    alternatives: alternativeBlueprints.map((item, index) => {
+    pathways: serviceCopy.pathwayLenses,
+    alternatives: serviceCopy.alternativeBlueprints.map((item, index) => {
       const score = 83 + index * 2;
       return {
-        id: `${item.type.toLowerCase().replace(/\s+/g, "-")}-${index}`,
+        id: `${index}-${item.type.toLowerCase().replace(/\s+/g, "-")}`,
+        iconKey: index,
+        tone: ["good", "info", "vivid", "calm", "scholar", "sun"][index] || "info",
         ...item,
         fitScore: score,
         scoreTone: getScoreTone(score),
         compactPlan: [
-          `${item.type} Year 1 keeps core progression steady.`,
-          `Year 2 introduces a stronger ${item.type.toLowerCase()} emphasis.`,
+          formatCopy(serviceCopy.compactPlanYear1, { type: item.type }),
+          formatCopy(serviceCopy.compactPlanYear2, { type: item.type.toLowerCase() }),
         ],
       };
     }),
     meta: {
-      source: "mock-service",
+      source: serviceCopy.source,
       backendReady: true,
-      retrievalLayer: "Elastic-ready",
+      backendReadyLabel: serviceCopy.backendReady,
+      mockOnlyLabel: serviceCopy.mockOnly,
+      retrievalLayer: serviceCopy.retrievalLayer,
       latency: refinement ? "240ms" : "176ms",
       generatedAt: new Date(now).toISOString(),
     },
@@ -329,14 +205,15 @@ export async function generatePlannerResult({
   prompt,
   previousResultId,
   followUpPrompt,
+  locale = "en",
 }) {
   if (!prompt?.trim()) {
-    throw new Error("Prompt is required to generate a pathway.");
+    throw new Error(getCopy(locale).plannerService.promptRequired);
   }
 
   await new Promise((resolve) => {
     window.setTimeout(resolve, followUpPrompt ? 750 : 900);
   });
 
-  return buildPlannerResponse({ prompt, previousResultId, followUpPrompt });
+  return buildPlannerResponse({ prompt, previousResultId, followUpPrompt, locale });
 }
